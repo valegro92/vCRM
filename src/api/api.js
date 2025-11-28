@@ -1,4 +1,10 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+// In produzione su Vercel, le API sono su /api (stesso dominio)
+// In sviluppo locale, usa il server Express su porta 5001
+const API_URL = process.env.REACT_APP_API_URL || (
+  process.env.NODE_ENV === 'production'
+    ? '/api'
+    : 'http://localhost:5001/api'
+);
 
 const getAuthToken = () => {
   return localStorage.getItem('token');

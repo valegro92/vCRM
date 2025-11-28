@@ -1,28 +1,10 @@
-// Database connection helper for Vercel Serverless
-// Supporta sia PostgreSQL (Neon/Vercel) che in-memory per sviluppo
+// Database connection helper for Vercel Postgres
+const { sql } = require('@vercel/postgres');
 
-const { Pool } = require('pg');
-
-let pool;
-
-function getPool() {
-  if (!pool) {
-    // Usa DATABASE_URL da variabili d'ambiente Vercel
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    });
-  }
-  return pool;
-}
-
-async function query(text, params) {
-  const client = getPool();
+async function query(text, params = []) {
   try {
-    const result = await client.query(text, params);
+    // Convert numbered placeholders ($1, $2) if not already
+    const result = await sql.query(text, params);
     return result;
   } catch (error) {
     console.error('Database query error:', error);
@@ -30,4 +12,15 @@ async function query(text, params) {
   }
 }
 
-module.exports = { query, getPool };
+// Helper per query semplici
+async function queryOne(text, params = []) {
+  const result = await query(text, params);
+  return result.rows[0] || null;
+}
+
+async function queryAll(text, params = []) {
+  const result = await query(text, params);
+  return result.rows;
+}
+
+module.exports = { query, queryOne, queryAll, sql };
