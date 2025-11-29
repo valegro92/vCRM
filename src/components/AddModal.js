@@ -106,13 +106,24 @@ export default function AddModal({
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Azienda</label>
+                                    <label>Azienda / Contatto</label>
                                     <select
-                                        value={newItem.company || ''}
-                                        onChange={(e) => setNewItem({ ...newItem, company: e.target.value })}
+                                        value={newItem.contactId || ''}
+                                        onChange={(e) => {
+                                            const selectedContact = contacts.find(c => c.id === parseInt(e.target.value));
+                                            setNewItem({ 
+                                                ...newItem, 
+                                                contactId: selectedContact?.id || null,
+                                                company: selectedContact?.company || selectedContact?.name || ''
+                                            });
+                                        }}
                                     >
-                                        <option value="">Seleziona azienda</option>
-                                        {contacts.map(c => <option key={c.id} value={c.company}>{c.company}</option>)}
+                                        <option value="">Seleziona azienda/contatto</option>
+                                        {contacts.map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.company || c.name} {c.company && c.name !== c.company ? `(${c.name})` : ''}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="form-group">
@@ -179,8 +190,34 @@ export default function AddModal({
                                     required
                                 />
                             </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Contatto</label>
+                                    <select
+                                        value={newItem.contactId || ''}
+                                        onChange={(e) => setNewItem({ ...newItem, contactId: parseInt(e.target.value) || null })}
+                                    >
+                                        <option value="">Seleziona contatto</option>
+                                        {contacts.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name || c.company}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Opportunità</label>
+                                    <select
+                                        value={newItem.opportunityId || ''}
+                                        onChange={(e) => setNewItem({ ...newItem, opportunityId: parseInt(e.target.value) || null })}
+                                    >
+                                        <option value="">Nessuna opportunità</option>
+                                        {opportunities.map(o => (
+                                            <option key={o.id} value={o.id}>{o.title} ({o.company})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
                             {newItem.opportunityId && (
-                                <div className="form-info">
+                                <div className="form-info" style={{ background: '#dcfce7', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: '#166534' }}>
                                     <CheckSquare size={16} />
                                     <span>Collegata a: {opportunities.find(o => o.id === newItem.opportunityId)?.title}</span>
                                 </div>
