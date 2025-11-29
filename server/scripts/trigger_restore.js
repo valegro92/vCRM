@@ -1,8 +1,10 @@
-const fetch = require('node-fetch'); // Assuming node-fetch is available or using global fetch in Node 18+
+// Using native fetch in Node 18+
+const myFetch = global.fetch;
 
-// If node-fetch is not available, we can try to use the global fetch (Node 18+)
-// or require the user to install it. For simplicity, we'll assume global fetch if node-fetch fails.
-const myFetch = global.fetch || require('node-fetch');
+if (!myFetch) {
+    console.error('Fetch API not found. Please use Node.js 18+ or install node-fetch.');
+    process.exit(1);
+}
 
 async function restore() {
     const baseUrl = 'https://vcrm-x1crx.sevalla.app/api';

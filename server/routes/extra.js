@@ -340,4 +340,24 @@ router.post('/restore-legacy', auth, async (req, res) => {
   }
 });
 
+// ============== DEBUG ==============
+router.get('/db-test', async (req, res) => {
+  try {
+    const result = await getOne('SELECT 1 as val');
+    res.json({ status: 'ok', result });
+  } catch (err) {
+    res.status(500).json({
+      error: 'Database connection failed',
+      details: err.message,
+      stack: err.stack,
+      env: {
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        db: process.env.DB_NAME,
+        hasUrl: !!process.env.DATABASE_URL
+      }
+    });
+  }
+});
+
 module.exports = router;
