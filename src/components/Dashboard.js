@@ -48,9 +48,9 @@ export default function Dashboard({ opportunities, tasks, contacts, setActiveVie
         // Pipeline totale
         const totalPipeline = opportunities.filter(o =>
             !o.stage?.toLowerCase().includes('chiuso')
-        ).reduce((sum, o) => sum + (o.value || 0), 0);
+        ).reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
 
-        const lastMonthPipeline = lastMonthOpps.reduce((sum, o) => sum + (o.value || 0), 0);
+        const lastMonthPipeline = lastMonthOpps.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
         const pipelineChange = lastMonthPipeline > 0
             ? (((totalPipeline - lastMonthPipeline) / lastMonthPipeline) * 100).toFixed(1)
             : 0;
@@ -58,7 +58,7 @@ export default function Dashboard({ opportunities, tasks, contacts, setActiveVie
         // Pipeline ponderata
         const weightedPipeline = opportunities.filter(o =>
             !o.stage?.toLowerCase().includes('chiuso')
-        ).reduce((sum, o) => sum + ((o.value || 0) * (o.probability || 0) / 100), 0);
+        ).reduce((sum, o) => sum + ((parseFloat(o.value) || 0) * (parseFloat(o.probability) || 0) / 100), 0);
 
         // Tasso conversione
         const wonDeals = opportunities.filter(o =>

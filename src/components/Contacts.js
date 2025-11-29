@@ -614,7 +614,7 @@ export default function Contacts({ contacts, openAddModal, handleDeleteContact }
 
             <div className="stats-bar">
                 <div className="stat-item"><strong>{filteredContacts.length}</strong> contatti {hasActiveFilters && `(di ${contacts.length})`}</div>
-                <div className="stat-item">Valore totale: <strong>€{filteredContacts.reduce((sum, c) => sum + (c.value || 0), 0).toLocaleString()}</strong></div>
+                <div className="stat-item">Valore totale: <strong>€{filteredContacts.reduce((sum, c) => sum + (parseFloat(c.value) || 0), 0).toLocaleString()}</strong></div>
             </div>
 
             <div className="data-table">

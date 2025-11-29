@@ -12,11 +12,11 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
     // Stats
     const stats = useMemo(() => {
         const active = opportunities.filter(o => !o.stage?.toLowerCase().includes('chiuso'));
-        const totalValue = active.reduce((sum, o) => sum + (o.value || 0), 0);
+        const totalValue = active.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
         const avgProbability = active.length > 0
-            ? Math.round(active.reduce((sum, o) => sum + (o.probability || 0), 0) / active.length)
+            ? Math.round(active.reduce((sum, o) => sum + (parseFloat(o.probability) || 0), 0) / active.length)
             : 0;
-        const weighted = active.reduce((sum, o) => sum + ((o.value || 0) * (o.probability || 0) / 100), 0);
+        const weighted = active.reduce((sum, o) => sum + ((parseFloat(o.value) || 0) * (parseFloat(o.probability) || 0) / 100), 0);
         return { count: active.length, totalValue, avgProbability, weighted };
     }, [opportunities]);
 
