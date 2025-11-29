@@ -139,15 +139,31 @@ app.use('/api/*', (req, res) => {
   });
 });
 
-// Serve static files in production
-if (NODE_ENV === 'production') {
-  const path = require('path');
-  const buildPath = path.join(__dirname, '../build');
+// Serve static files from React build
+const path = require('path');
+const buildPath = path.join(__dirname, '../build');
+const fs = require('fs');
 
+// Check if build directory exists
+if (fs.existsSync(buildPath)) {
+  console.log(`✓ Serving static files from: ${buildPath}`);
   app.use(express.static(buildPath));
 
+  // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
+  });
+} else {
+  console.warn(`⚠ Build directory not found at: ${buildPath}`);
+  console.warn('  Static files will not be served. Run "npm run build:prod" to create the build.');
+
+  // Fallback response when build doesn't exist
+  app.get('*', (req, res) => {
+    res.status(503).json({
+      error: 'Application not built',
+      message: 'Please run the build process first',
+      buildPath: buildPath
+    });
   });
 }
 
