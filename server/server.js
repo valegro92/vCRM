@@ -30,9 +30,9 @@ const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = NODE_ENV === 'production'
       ? [
-          'https://v-crm-sigma.vercel.app',
-          ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
-        ]
+        'https://v-crm-sigma.vercel.app',
+        ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
+      ]
       : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -95,8 +95,8 @@ app.use('/api', extraRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'vCRM API is running',
     version: '2.0.0',
     timestamp: new Date().toISOString(),
@@ -120,24 +120,36 @@ app.get('/api', (req, res) => {
   });
 });
 
-// 404 Handler
+// 404 Handler for API requests
 app.use('/api/*', (req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Endpoint not found',
     path: req.originalUrl
   });
 });
 
+// Serve static files in production
+if (NODE_ENV === 'production') {
+  const path = require('path');
+  const buildPath = path.join(__dirname, '../build');
+
+  app.use(express.static(buildPath));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+}
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error(`[ERROR] ${new Date().toISOString()}:`, err);
-  
+
   // Don't leak error details in production
   const errorResponse = {
     error: NODE_ENV === 'production' ? 'Internal server error' : err.message,
     ...(NODE_ENV === 'development' && { stack: err.stack })
   };
-  
+
   res.status(err.status || 500).json(errorResponse);
 });
 
