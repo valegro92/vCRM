@@ -557,7 +557,7 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                         padding: 0 8px;
                     }
                 }
-            </style>
+            `}</style>
         </div>
     );
 }
