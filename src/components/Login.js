@@ -32,11 +32,6 @@ export default function Login({ onLoginSuccess }) {
     }
   };
 
-  const handleDemoLogin = () => {
-    setUsername('admin');
-    setPassword('admin123');
-  };
-
   return (
     <div className="login-page">
       <style>{`
@@ -302,59 +297,6 @@ export default function Login({ onLoginSuccess }) {
           to { transform: rotate(360deg); }
         }
 
-        .divider {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          margin: 28px 0;
-        }
-
-        .divider-line {
-          flex: 1;
-          height: 1px;
-          background: #e2e8f0;
-        }
-
-        .divider-text {
-          font-size: 13px;
-          color: #94a3b8;
-          font-weight: 500;
-        }
-
-        .demo-button {
-          width: 100%;
-          padding: 14px;
-          background: #f1f5f9;
-          border: 2px solid #e2e8f0;
-          border-radius: 12px;
-          color: #475569;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .demo-button:hover {
-          background: #e2e8f0;
-          border-color: #cbd5e1;
-        }
-
-        .login-footer {
-          margin-top: 24px;
-          text-align: center;
-        }
-
-        .login-footer p {
-          font-size: 13px;
-          color: #94a3b8;
-        }
-
-        .login-footer a {
-          color: #3b82f6;
-          font-weight: 600;
-          text-decoration: none;
-        }
-
         @media (max-width: 1024px) {
           .login-left {
             display: none;
@@ -473,24 +415,6 @@ export default function Login({ onLoginSuccess }) {
               )}
             </button>
           </form>
-
-          <div className="divider">
-            <div className="divider-line"></div>
-            <span className="divider-text">oppure</span>
-            <div className="divider-line"></div>
-          </div>
-
-          <button 
-            type="button"
-            className="demo-button"
-            onClick={handleDemoLogin}
-          >
-            🎮 Usa credenziali demo
-          </button>
-
-          <div className="login-footer">
-            <p>Demo: username <strong>admin</strong> / password <strong>admin123</strong></p>
-          </div>
         </div>
       </div>
     </div>
