@@ -5,12 +5,12 @@ import api from '../api/api';
 
 // Colori per gli header delle colonne stile Ydea
 const STAGE_COLORS = {
-    'Lead': '#f59e0b',           // Arancione
-    'In contatto': '#3b82f6',    // Blu
-    'Follow Up da fare': '#8b5cf6', // Viola
-    'Revisionare offerta': '#ec4899', // Rosa
-    'Chiuso Vinto': '#10b981',   // Verde
-    'Chiuso Perso': '#ef4444'    // Rosso
+    'Lead': '#fbbf24',           // Giallo/Oro (Analisi esigenze)
+    'In contatto': '#60a5fa',    // Azzurro (Inviare offerta)
+    'Follow Up da fare': '#fb923c', // Arancione (In attesa decision makers)
+    'Revisionare offerta': '#a78bfa', // Viola Chiaro (Revisionare offerta)
+    'Chiuso Vinto': '#4ade80',   // Verde (Chiuso vinto)
+    'Chiuso Perso': '#f87171'    // Rosso Chiaro
 };
 
 export default function Pipeline({ opportunities, tasks, setOpportunities, openAddModal, setNewItem }) {
