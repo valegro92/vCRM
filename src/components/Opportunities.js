@@ -8,6 +8,7 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
     const [sortBy, setSortBy] = useState('value');
     const [sortOrder, setSortOrder] = useState('desc');
     const [showFilters, setShowFilters] = useState(false);
+    const [selectedYear, setSelectedYear] = useState('all'); // Year filter
 
     // Stats
     const stats = useMemo(() => {
