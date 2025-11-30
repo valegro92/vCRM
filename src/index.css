@@ -1186,118 +1186,100 @@ body {
   overflow: hidden;
 }
 
-.opp-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--gradient-primary);
-  opacity: 0;
-  transition: opacity var(--transition-base);
+height: 160px;
+/* Fixed height for consistency */
+display: flex;
+flex-direction: column;
+box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .opp-card:hover {
-  border-color: var(--primary-200);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
+  border-color: var(--blue-300);
 }
 
-.opp-card:hover::before {
-  opacity: 1;
-}
-
-.opp-card:active {
-  cursor: grabbing;
+.opp-card-header {
+  margin-bottom: 8px;
 }
 
 .opp-card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--slate-900);
-  margin-bottom: var(--space-2);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--blue-600);
+  /* Blue title */
+  margin-bottom: 4px;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.6em;
-  /* Ensure consistent height for 2 lines */
+  height: 2.6em;
+  /* Fixed height for title area */
 }
 
 .opp-card-value {
-  font-size: 20px;
-  font-weight: 800;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: var(--space-3);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--slate-900);
+  /* Black value */
+}
+
+.opp-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .opp-card-company {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--primary-600);
-  margin-bottom: var(--space-1);
+  color: var(--blue-500);
+  /* Light blue company */
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .opp-card-owner {
-  font-size: 12px;
-  color: var(--slate-500);
-  margin-bottom: var(--space-2);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  font-size: 11px;
+  color: var(--slate-400);
+  display: none;
+  /* Hide owner to keep it simple, or keep if needed */
 }
 
 .opp-card-date {
   font-size: 12px;
   color: var(--slate-400);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: var(--space-2) 0;
-  border-top: 1px solid var(--slate-100);
-  margin-top: var(--space-2);
+  /* Gray date */
+  margin-top: auto;
+  /* Push to bottom if needed, but we have fixed height */
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
 }
 
-.opp-card-actions {
-  display: flex;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--slate-100);
-}
-
-.opp-action-btn {
-  flex: 1;
+.opp-eye-icon {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--blue-500);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-2) var(--space-3);
-  background: var(--slate-50);
-  border: 1px solid var(--slate-200);
-  border-radius: var(--radius-lg);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--slate-600);
-  cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
-.opp-action-btn:hover {
-  background: var(--primary-50);
-  border-color: var(--primary-200);
-  color: var(--primary-600);
-}
-
-.opp-action-btn.delete:hover {
-  background: var(--rose-50);
-  border-color: var(--rose-200);
-  color: var(--rose-600);
+.opp-eye-icon:hover {
+  background: var(--blue-50);
+  color: var(--blue-700);
 }
 
 /* =========================================

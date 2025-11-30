@@ -74,10 +74,10 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
 
     const formatDate = (dateStr) => {
         if (!dateStr) return 'N/D';
-        return new Date(dateStr).toLocaleDateString('it-IT', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
+        return new Date(dateStr).toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
         });
     };
 
@@ -120,7 +120,7 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                             onDrop={(e) => handleDrop(e, stage)}
                         >
                             {/* Header colorato */}
-                            <div 
+                            <div
                                 className="column-header"
                                 style={{ background: headerColor }}
                             >
@@ -142,49 +142,36 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, opp)}
                                     >
-                                        <div className="opp-card-title">{opp.title || 'Senza titolo'}</div>
-                                        <div className="opp-card-value">€{(parseFloat(opp.value) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
-                                        <div className="opp-card-company">{opp.company || 'N/D'}</div>
-                                        <div className="opp-card-owner">{opp.owner || 'Non assegnato'}</div>
-                                        <div className="opp-card-date">
-                                            <Calendar size={12} />
-                                            {formatDate(opp.closeDate)}
+                                        <div className="opp-card-header">
+                                            <div className="opp-card-title">{opp.title || 'Senza titolo'}</div>
+                                            <div className="opp-card-value">€{(parseFloat(opp.value) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
                                         </div>
-                                        
-                                        {/* Actions */}
-                                        <div className="opp-card-actions">
-                                            <button 
-                                                className="opp-action-btn"
-                                                onClick={() => openAddModal('opportunity', opp)}
-                                                title="Modifica"
-                                            >
-                                                <Edit2 size={12} />
-                                            </button>
-                                            <button 
-                                                className="opp-action-btn"
-                                                onClick={() => {
-                                                    setNewItem({ opportunityId: opp.id, title: '' });
-                                                    openAddModal('task');
-                                                }}
-                                                title="Aggiungi attività"
-                                            >
-                                                <Plus size={12} />
-                                            </button>
-                                            <button 
-                                                className="opp-action-btn delete"
-                                                onClick={() => handleDelete(opp.id)}
-                                                title="Elimina"
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
+
+                                        <div className="opp-card-body">
+                                            <div className="opp-card-company">{opp.company || 'N/D'}</div>
+                                            <div className="opp-card-owner">{opp.owner || 'Non assegnato'}</div>
+                                            <div className="opp-card-date">
+                                                {formatDate(opp.closeDate)}
+                                            </div>
                                         </div>
+
+                                        <button
+                                            className="opp-eye-icon"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openAddModal('opportunity', opp);
+                                            }}
+                                            title="Vedi dettagli"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
                                     </div>
                                 ))}
 
                                 {stageOpps.length === 0 && (
-                                    <div style={{ 
-                                        padding: '20px', 
-                                        textAlign: 'center', 
+                                    <div style={{
+                                        padding: '20px',
+                                        textAlign: 'center',
                                         color: '#94a3b8',
                                         fontSize: '13px'
                                     }}>
