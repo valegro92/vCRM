@@ -449,6 +449,27 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                     min-height: 250px;
                 }
 
+                .chart-legend {
+                    display: flex;
+                    gap: 16px;
+                    margin-bottom: 16px;
+                    justify-content: center;
+                }
+
+                .legend-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 13px;
+                    color: #64748b;
+                }
+
+                .legend-dot {
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                }
+
                 .area-chart-svg {
                     width: 100%;
                     height: auto;
