@@ -187,7 +187,7 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
             {/* BI Analytics Section */}
             <div className="bi-section">
                 <div className="bi-grid">
-                    {/* Trend Chart - Area */}
+                    {/* Trend Chart - Area (YDEA Style) */}
                     <div className="bi-card">
                         <h3 className="bi-card-title">📈 Andamento Vendite {selectedYear !== 'all' ? selectedYear : ''}</h3>
                         <div className="trend-chart">
@@ -213,15 +213,49 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                                     }
                                 });
 
-                                const months = Object.keys(monthlyData).sort();
-                                const maxValue = Math.max(...months.map(m => monthlyData[m].won + monthlyData[m].lost), 1);
+                                const months = Object.keys(monthlyData).sort().slice(-6);
 
                                 if (months.length === 0) {
                                     return <div className="no-data">Nessun dato disponibile</div>;
                                 }
 
+                                const maxValue = Math.max(...months.map(m => Math.max(monthlyData[m].won, monthlyData[m].lost)), 1);
+                                const width = 500;
+                                const height = 200;
+                                const padding = 20;
+                                const chartWidth = width - 2 * padding;
+                                const chartHeight = height - 2 * padding;
+
+                                // Generate path points
+                                const generatePath = (dataKey) => {
+                                    const points = months.map((month, i) => {
+                                        const x = padding + (i / (months.length - 1)) * chartWidth;
+                                        const value = monthlyData[month][dataKey];
+                                        const y = height - padding - (value / maxValue) * chartHeight;
+                                        return { x, y, value };
+                                    });
+
+                                    // Create smooth curve path (using quadratic curves)
+                                    let path = `M ${points[0].x} ${points[0].y}`;
+
+                                    for (let i = 0; i < points.length - 1; i++) {
+                                        const current = points[i];
+                                        const next = points[i + 1];
+                                        const midX = (current.x + next.x) / 2;
+                                        path += ` Q ${current.x} ${current.y}, ${midX} ${(current.y + next.y) / 2}`;
+                                    }
+
+                                    const last = points[points.length - 1];
+                                    path += ` Q ${last.x} ${last.y}, ${last.x} ${last.y}`;
+
+                                    // Close area
+                                    path += ` L ${last.x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+
+                                    return path;
+                                };
+
                                 return (
-                                    <div className="area-chart">
+                                    <div className="area-chart-container">
                                         <div className="chart-legend">
                                             <span className="legend-item">
                                                 <span className="legend-dot" style={{ background: '#10b981' }}></span>
@@ -232,33 +266,53 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                                                 Chiuso Perso
                                             </span>
                                         </div>
-                                        <div className="chart-bars">
-                                            {months.slice(-6).map(month => {
-                                                const data = monthlyData[month];
-                                                const wonHeight = (data.won / maxValue) * 100;
-                                                const lostHeight = (data.lost / maxValue) * 100;
+                                        <svg viewBox={`0 0 ${width} ${height}`} className="area-chart-svg">
+                                            {/* Gradients */}
+                                            <defs>
+                                                <linearGradient id="wonGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+                                                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
+                                                </linearGradient>
+                                                <linearGradient id="lostGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
+                                                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0.1" />
+                                                </linearGradient>
+                                            </defs>
+
+                                            {/* Lost (bottom layer) */}
+                                            <path
+                                                d={generatePath('lost')}
+                                                fill="url(#lostGradient)"
+                                                opacity="0.8"
+                                            />
+                                            {/* Won (top layer) */}
+                                            <path
+                                                d={generatePath('won')}
+                                                fill="url(#wonGradient)"
+                                                opacity="0.8"
+                                            />
+
+
+                                            {/* Month labels */}
+                                            {months.map((month, i) => {
+                                                const x = padding + (i / (months.length - 1)) * chartWidth;
                                                 const [year, monthNum] = month.split('-');
                                                 const monthName = new Date(year, monthNum - 1).toLocaleDateString('it-IT', { month: 'short' });
-
                                                 return (
-                                                    <div key={month} className="chart-bar-group">
-                                                        <div className="chart-bars-container">
-                                                            <div
-                                                                className="chart-bar won"
-                                                                style={{ height: `${wonHeight}%` }}
-                                                                title={`Vinto: €${data.won.toLocaleString()}`}
-                                                            ></div>
-                                                            <div
-                                                                className="chart-bar lost"
-                                                                style={{ height: `${lostHeight}%` }}
-                                                                title={`Perso: €${data.lost.toLocaleString()}`}
-                                                            ></div>
-                                                        </div>
-                                                        <div className="chart-label">{monthName}</div>
-                                                    </div>
+                                                    <text
+                                                        key={month}
+                                                        x={x}
+                                                        y={height - 5}
+                                                        textAnchor="middle"
+                                                        fontSize="11"
+                                                        fill="#94a3b8"
+                                                        fontWeight="600"
+                                                    >
+                                                        {monthName.toUpperCase()}
+                                                    </text>
                                                 );
                                             })}
-                                        </div>
+                                        </svg>
                                     </div>
                                 );
                             })()}
@@ -390,83 +444,15 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                     font-size: 14px;
                 }
 
-                /* Area Chart */
-                .area-chart {
+                /* Area Chart - YDEA Style */
+                .area-chart-container {
                     min-height: 250px;
                 }
 
-                .chart-legend {
-                    display: flex;
-                    gap: 16px;
-                    margin-bottom: 16px;
-                    justify-content: center;
-                }
-
-                .legend-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-size: 13px;
-                    color: #64748b;
-                }
-
-                .legend-dot {
-                    width: 12px;
-                    height: 12px;
-                    border-radius: 50%;
-                }
-
-                .chart-bars {
-                    display: flex;
-                    align-items: flex-end;
-                    justify-content: space-around;
-                    height: 180px;
-                    gap: 8px;
-                    padding: 0 16px;
-                }
-
-                .chart-bar-group {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .chart-bars-container {
-                    display: flex;
-                    gap: 4px;
-                    height: 150px;
-                    align-items: flex-end;
+                .area-chart-svg {
                     width: 100%;
-                    justify-content: center;
-                }
-
-                .chart-bar {
-                    width: 20px;
-                    min-height: 4px;
-                    border-radius: 4px 4px 0 0;
-                    transition: all 0.3s ease;
-                }
-
-                .chart-bar.won {
-                    background: linear-gradient(180deg, #10b981, #059669);
-                }
-
-                .chart-bar.lost {
-                    background: linear-gradient(180deg, #ef4444, #dc2626);
-                }
-
-                .chart-bar:hover {
-                    opacity: 0.8;
-                    transform: scaleY(1.05);
-                }
-
-                .chart-label {
-                    font-size: 11px;
-                    color: #94a3b8;
-                    text-transform: uppercase;
-                    font-weight: 600;
+                    height: auto;
+                    max-height: 250px;
                 }
 
                 /* Donut Chart */
