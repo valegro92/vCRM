@@ -88,6 +88,29 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
 
     const hasActiveFilters = filterStage !== 'all' || searchTerm;
 
+    // Helper functions
+    const handleDragStart = (e, opp) => {
+        e.dataTransfer.setData('opportunityId', opp.id);
+        e.dataTransfer.setData('sourceStage', opp.stage);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('it-IT');
+    };
+
+    const getProbabilityColor = (prob) => {
+        if (prob >= 80) return '#10b981'; // Green
+        if (prob >= 50) return '#f59e0b'; // Orange
+        return '#ef4444'; // Red
+    };
+
+    const handleDelete = (id) => {
+        if (window.confirm('Sei sicuro di voler eliminare questa opportunità?')) {
+            handleDeleteOpportunity(id);
+        }
+    };
+
     return (
         <div className="opportunities-view">
             {/* Header Section */}
