@@ -14,6 +14,9 @@ import AddModal from './components/AddModal';
 import Settings from './components/Settings';
 import Calendar from './components/Calendar';
 
+// Icons for Bottom Navigation
+import { TrendingUp, Target, Users, Euro, CheckSquare, MoreHorizontal } from 'lucide-react';
+
 export default function YdeaCRM() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
@@ -27,6 +30,9 @@ export default function YdeaCRM() {
   const [newItem, setNewItem] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Mobile sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check authentication on mount
   useEffect(() => {
@@ -44,6 +50,23 @@ export default function YdeaCRM() {
       loadAllData();
     }
   }, [isAuthenticated]);
+
+  // Close sidebar when view changes (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [activeView]);
+
+  // Prevent body scroll when sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
 
   const loadAllData = async () => {
     setLoading(true);
@@ -76,6 +99,11 @@ export default function YdeaCRM() {
     setContacts([]);
     setOpportunities([]);
     setTasks([]);
+  };
+
+  // Mobile navigation handler
+  const handleMobileNavigation = (view) => {
+    setActiveView(view);
   };
 
   // CRUD Operations
@@ -191,14 +219,33 @@ export default function YdeaCRM() {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
+  // Bottom navigation items (mobile only)
+  const bottomNavItems = [
+    { id: 'dashboard', icon: TrendingUp, label: 'Home' },
+    { id: 'pipeline', icon: Target, label: 'Pipeline' },
+    { id: 'contacts', icon: Users, label: 'Contatti' },
+    { id: 'opportunities', icon: Euro, label: 'Opportunità' },
+    { id: 'tasks', icon: CheckSquare, label: 'Attività' },
+  ];
+
   return (
     <div className="crm-app">
+      {/* Mobile Sidebar Overlay */}
+      <div 
+        className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      {/* Sidebar */}
       <Sidebar
         activeView={activeView}
         setActiveView={setActiveView}
         handleLogout={handleLogout}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
+      {/* Main Content */}
       <main className="main-content">
         <Header
           activeView={activeView}
@@ -206,6 +253,7 @@ export default function YdeaCRM() {
           setSearchQuery={setSearchQuery}
           user={user}
           setActiveView={setActiveView}
+          onMenuClick={() => setSidebarOpen(true)}
         />
 
         <div className="content">
@@ -281,6 +329,23 @@ export default function YdeaCRM() {
         </div>
       </main>
 
+      {/* Bottom Navigation - Mobile Only */}
+      <nav className="bottom-nav">
+        <div className="bottom-nav-items">
+          {bottomNavItems.map(item => (
+            <button
+              key={item.id}
+              className={`bottom-nav-item ${activeView === item.id ? 'active' : ''}`}
+              onClick={() => handleMobileNavigation(item.id)}
+            >
+              <item.icon size={24} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Add/Edit Modal */}
       <AddModal
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}

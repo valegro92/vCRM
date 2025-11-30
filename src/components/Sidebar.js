@@ -1,7 +1,7 @@
 import React from 'react';
-import { TrendingUp, Target, Users, Euro, CheckSquare, Calendar, Settings, LogOut } from 'lucide-react';
+import { TrendingUp, Target, Users, Euro, CheckSquare, Calendar, Settings, LogOut, X } from 'lucide-react';
 
-export default function Sidebar({ activeView, setActiveView, handleLogout }) {
+export default function Sidebar({ activeView, setActiveView, handleLogout, isOpen, onClose }) {
     const NavItem = ({ icon, label, view }) => (
         <button
             className={`nav-item ${activeView === view ? 'active' : ''}`}
@@ -13,10 +13,40 @@ export default function Sidebar({ activeView, setActiveView, handleLogout }) {
     );
 
     return (
-        <div className="sidebar">
+        <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+            {/* Mobile Close Button */}
+            <button 
+                className="mobile-close-btn"
+                onClick={onClose}
+                style={{
+                    display: 'none',
+                    position: 'absolute',
+                    top: '16px',
+                    right: '16px',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    cursor: 'pointer',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <X size={20} />
+            </button>
+            <style>{`
+                @media (max-width: 768px) {
+                    .mobile-close-btn {
+                        display: flex !important;
+                    }
+                }
+            `}</style>
+
             <div className="logo">
-                <div className="logo-icon">Y</div>
-                <span className="logo-text">CRM Suite</span>
+                <div className="logo-icon">V</div>
+                <span className="logo-text">vCRM Suite</span>
             </div>
 
             <nav className="nav-menu">

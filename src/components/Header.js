@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, X, User, Briefcase, CheckSquare, Clock, AlertCircle, Check } from 'lucide-react';
+import { Search, Bell, X, User, Briefcase, CheckSquare, Clock, AlertCircle, Check, Menu } from 'lucide-react';
 import api from '../api/api';
 
-export default function Header({ activeView, searchQuery, setSearchQuery, user, setActiveView }) {
+export default function Header({ activeView, searchQuery, setSearchQuery, user, setActiveView, onMenuClick }) {
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [searchResults, setSearchResults] = useState({ contacts: [], opportunities: [], tasks: [] });
     const [searching, setSearching] = useState(false);
@@ -103,104 +103,27 @@ export default function Header({ activeView, searchQuery, setSearchQuery, user, 
 
     const totalResults = searchResults.contacts.length + searchResults.opportunities.length + searchResults.tasks.length;
 
-    const styles = `
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 32px;
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
+    const getPageTitle = () => {
+        switch(activeView) {
+            case 'dashboard': return 'Dashboard';
+            case 'pipeline': return 'Pipeline';
+            case 'contacts': return 'Contatti';
+            case 'opportunities': return 'Opportunità';
+            case 'tasks': return 'Attività';
+            case 'calendar': return 'Calendario';
+            case 'settings': return 'Impostazioni';
+            default: return 'Dashboard';
         }
-        .header-left { }
-        .page-title { font-size: 20px; font-weight: 700; color: #0f172a; }
-        .header-center { flex: 1; max-width: 500px; margin: 0 32px; position: relative; }
-        .search-box { display: flex; align-items: center; gap: 12px; background: #f1f5f9; border-radius: 12px; padding: 10px 16px; transition: all 0.2s; border: 2px solid transparent; }
-        .search-box:focus-within { background: white; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
-        .search-box input { border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: #1e293b; }
-        .search-box input::placeholder { color: #94a3b8; }
-        .search-box svg { color: #64748b; flex-shrink: 0; }
-        .clear-search { cursor: pointer; padding: 2px; border-radius: 4px; }
-        .clear-search:hover { background: #e2e8f0; }
-        .header-right { display: flex; align-items: center; gap: 16px; }
-        .icon-btn { position: relative; background: none; border: none; cursor: pointer; padding: 8px; border-radius: 10px; color: #64748b; transition: all 0.2s; }
-        .icon-btn:hover { background: #f1f5f9; color: #1e293b; }
-        .notification-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
-        .user-avatar { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; cursor: pointer; }
-
-        .search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            margin-top: 8px;
-            max-height: 400px;
-            overflow-y: auto;
-            z-index: 1000;
-        }
-        .search-section { padding: 8px 0; }
-        .search-section:not(:last-child) { border-bottom: 1px solid #e2e8f0; }
-        .search-section-title { padding: 8px 16px; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-        .search-result-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; transition: all 0.15s; }
-        .search-result-item:hover { background: #f1f5f9; }
-        .search-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .search-icon.contact { background: #dbeafe; color: #2563eb; }
-        .search-icon.opportunity { background: #dcfce7; color: #16a34a; }
-        .search-icon.task { background: #fef3c7; color: #d97706; }
-        .search-result-info { flex: 1; min-width: 0; }
-        .search-result-title { font-size: 14px; font-weight: 500; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .search-result-subtitle { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .no-results { padding: 24px; text-align: center; color: #64748b; font-size: 14px; }
-        .searching { padding: 24px; text-align: center; color: #64748b; font-size: 14px; }
-
-        .notifications-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            width: 360px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            margin-top: 8px;
-            z-index: 1000;
-            overflow: hidden;
-        }
-        .notif-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #e2e8f0; }
-        .notif-header h3 { font-size: 16px; font-weight: 600; color: #0f172a; }
-        .notif-header button { background: none; border: none; color: #3b82f6; font-size: 13px; font-weight: 500; cursor: pointer; }
-        .notif-header button:hover { text-decoration: underline; }
-        .notif-list { max-height: 320px; overflow-y: auto; }
-        .notif-item { display: flex; gap: 12px; padding: 12px 16px; cursor: pointer; transition: background 0.15s; border-left: 3px solid transparent; }
-        .notif-item:hover { background: #f8fafc; }
-        .notif-item.unread { background: #eff6ff; border-left-color: #3b82f6; }
-        .notif-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .notif-icon.warning { background: #fef3c7; color: #d97706; }
-        .notif-icon.danger { background: #fee2e2; color: #dc2626; }
-        .notif-icon.info { background: #dbeafe; color: #2563eb; }
-        .notif-content { flex: 1; min-width: 0; }
-        .notif-title { font-size: 13px; font-weight: 500; color: #1e293b; margin-bottom: 2px; }
-        .notif-message { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .notif-time { font-size: 11px; color: #94a3b8; margin-top: 4px; }
-        .no-notif { padding: 32px; text-align: center; color: #64748b; font-size: 14px; }
-        .notif-container { position: relative; }
-    `;
+    };
 
     return (
         <header className="header">
-            <style>{styles}</style>
             <div className="header-left">
-                <h1 className="page-title">
-                    {activeView === 'dashboard' && 'Dashboard'}
-                    {activeView === 'pipeline' && 'Pipeline Vendite'}
-                    {activeView === 'contacts' && 'Gestione Contatti'}
-                    {activeView === 'opportunities' && 'Opportunità'}
-                    {activeView === 'tasks' && 'Attività'}
-                    {activeView === 'calendar' && 'Calendario'}
-                    {activeView === 'settings' && 'Impostazioni'}
-                </h1>
+                {/* Mobile Menu Button */}
+                <button className="mobile-menu-toggle" onClick={onMenuClick}>
+                    <Menu size={24} />
+                </button>
+                <h1 className="page-title">{getPageTitle()}</h1>
             </div>
 
             <div className="header-center" ref={searchRef}>
@@ -208,61 +131,73 @@ export default function Header({ activeView, searchQuery, setSearchQuery, user, 
                     <Search size={18} />
                     <input
                         type="text"
-                        placeholder="Cerca contatti, opportunità, attività..."
+                        placeholder="Cerca contatti, opportunità..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
                     />
                     {searchQuery && (
-                        <X size={16} className="clear-search" onClick={() => { setSearchQuery(''); setShowSearchResults(false); }} />
+                        <X size={16} style={{ cursor: 'pointer' }} onClick={() => { setSearchQuery(''); setShowSearchResults(false); }} />
                     )}
                 </div>
 
                 {showSearchResults && (
-                    <div className="search-results">
+                    <div className="search-results" style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        background: 'white',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+                        marginTop: '8px',
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        zIndex: 1000,
+                    }}>
                         {searching ? (
-                            <div className="searching">Ricerca in corso...</div>
+                            <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Ricerca in corso...</div>
                         ) : totalResults === 0 ? (
-                            <div className="no-results">Nessun risultato per "{searchQuery}"</div>
+                            <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Nessun risultato per "{searchQuery}"</div>
                         ) : (
                             <>
                                 {searchResults.contacts.length > 0 && (
-                                    <div className="search-section">
-                                        <div className="search-section-title">Contatti ({searchResults.contacts.length})</div>
+                                    <div style={{ padding: '8px 0', borderBottom: '1px solid #e2e8f0' }}>
+                                        <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Contatti ({searchResults.contacts.length})</div>
                                         {searchResults.contacts.map(contact => (
-                                            <div key={contact.id} className="search-result-item" onClick={() => handleResultClick('contact', contact)}>
-                                                <div className="search-icon contact"><User size={18} /></div>
-                                                <div className="search-result-info">
-                                                    <div className="search-result-title">{contact.name}</div>
-                                                    <div className="search-result-subtitle">{contact.company} • {contact.email}</div>
+                                            <div key={contact.id} onClick={() => handleResultClick('contact', contact)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={18} /></div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{contact.name}</div>
+                                                    <div style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{contact.company} • {contact.email}</div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                                 {searchResults.opportunities.length > 0 && (
-                                    <div className="search-section">
-                                        <div className="search-section-title">Opportunità ({searchResults.opportunities.length})</div>
+                                    <div style={{ padding: '8px 0', borderBottom: '1px solid #e2e8f0' }}>
+                                        <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Opportunità ({searchResults.opportunities.length})</div>
                                         {searchResults.opportunities.map(opp => (
-                                            <div key={opp.id} className="search-result-item" onClick={() => handleResultClick('opportunity', opp)}>
-                                                <div className="search-icon opportunity"><Briefcase size={18} /></div>
-                                                <div className="search-result-info">
-                                                    <div className="search-result-title">{opp.title}</div>
-                                                    <div className="search-result-subtitle">{opp.company} • €{(opp.value || 0).toLocaleString()}</div>
+                                            <div key={opp.id} onClick={() => handleResultClick('opportunity', opp)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Briefcase size={18} /></div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opp.title}</div>
+                                                    <div style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opp.company} • €{(opp.value || 0).toLocaleString()}</div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                                 {searchResults.tasks.length > 0 && (
-                                    <div className="search-section">
-                                        <div className="search-section-title">Attività ({searchResults.tasks.length})</div>
+                                    <div style={{ padding: '8px 0' }}>
+                                        <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Attività ({searchResults.tasks.length})</div>
                                         {searchResults.tasks.map(task => (
-                                            <div key={task.id} className="search-result-item" onClick={() => handleResultClick('task', task)}>
-                                                <div className="search-icon task"><CheckSquare size={18} /></div>
-                                                <div className="search-result-info">
-                                                    <div className="search-result-title">{task.title}</div>
-                                                    <div className="search-result-subtitle">{task.type} • {task.priority}</div>
+                                            <div key={task.id} onClick={() => handleResultClick('task', task)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckSquare size={18} /></div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</div>
+                                                    <div style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.type} • {task.priority}</div>
                                                 </div>
                                             </div>
                                         ))}
@@ -275,23 +210,35 @@ export default function Header({ activeView, searchQuery, setSearchQuery, user, 
             </div>
 
             <div className="header-right">
-                <div className="notif-container" ref={notifRef}>
+                <div className="notif-container" ref={notifRef} style={{ position: 'relative' }}>
                     <button className="icon-btn" onClick={() => setShowNotifications(!showNotifications)}>
                         <Bell size={20} />
                         {unreadCount > 0 && <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
                     </button>
 
                     {showNotifications && (
-                        <div className="notifications-dropdown">
-                            <div className="notif-header">
-                                <h3>Notifiche</h3>
+                        <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            width: '340px',
+                            maxWidth: 'calc(100vw - 32px)',
+                            background: 'white',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+                            marginTop: '8px',
+                            zIndex: 1000,
+                            overflow: 'hidden',
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid #e2e8f0' }}>
+                                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>Notifiche</h3>
                                 {unreadCount > 0 && (
-                                    <button onClick={markAllRead}>Segna tutte come lette</button>
+                                    <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Segna come lette</button>
                                 )}
                             </div>
-                            <div className="notif-list">
+                            <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
                                 {notifications.length === 0 ? (
-                                    <div className="no-notif">
+                                    <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
                                         <Check size={24} style={{ marginBottom: 8, color: '#10b981' }} />
                                         <div>Nessuna notifica</div>
                                     </div>
@@ -299,16 +246,36 @@ export default function Header({ activeView, searchQuery, setSearchQuery, user, 
                                     notifications.map(notif => (
                                         <div 
                                             key={notif.id} 
-                                            className={`notif-item ${!notif.isRead ? 'unread' : ''}`}
                                             onClick={() => handleNotificationClick(notif)}
+                                            style={{
+                                                display: 'flex',
+                                                gap: '12px',
+                                                padding: '12px 16px',
+                                                cursor: 'pointer',
+                                                transition: 'background 0.15s',
+                                                borderLeft: !notif.isRead ? '3px solid #6366f1' : '3px solid transparent',
+                                                background: !notif.isRead ? '#eef2ff' : 'transparent',
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseLeave={e => e.currentTarget.style.background = !notif.isRead ? '#eef2ff' : 'transparent'}
                                         >
-                                            <div className={`notif-icon ${notif.type === 'overdue' ? 'danger' : notif.type === 'due_today' ? 'warning' : 'info'}`}>
+                                            <div style={{
+                                                width: '36px',
+                                                height: '36px',
+                                                borderRadius: '8px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexShrink: 0,
+                                                background: notif.type === 'overdue' ? '#fee2e2' : notif.type === 'due_today' ? '#fef3c7' : '#dbeafe',
+                                                color: notif.type === 'overdue' ? '#dc2626' : notif.type === 'due_today' ? '#d97706' : '#2563eb',
+                                            }}>
                                                 {notif.type === 'overdue' ? <AlertCircle size={18} /> : <Clock size={18} />}
                                             </div>
-                                            <div className="notif-content">
-                                                <div className="notif-title">{notif.title}</div>
-                                                <div className="notif-message">{notif.message}</div>
-                                                <div className="notif-time">
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 500, color: '#1e293b', marginBottom: '2px' }}>{notif.title}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{notif.message}</div>
+                                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
                                                     {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('it-IT') : ''}
                                                 </div>
                                             </div>
@@ -320,7 +287,7 @@ export default function Header({ activeView, searchQuery, setSearchQuery, user, 
                     )}
                 </div>
                 <div className="user-avatar" title={user?.fullName || user?.username}>
-                    {user?.avatar || 'U'}
+                    {user?.avatar || (user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2) : 'U')}
                 </div>
             </div>
         </header>
