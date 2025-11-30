@@ -1061,8 +1061,9 @@ body {
 .pipeline-view {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--header-height) - 48px);
-  min-height: 500px;
+  /* Allow page to grow, don't constrain to viewport if content is tall */
+  height: auto;
+  min-height: calc(100vh - var(--header-height) - 48px);
 }
 
 .view-toolbar {
@@ -1097,7 +1098,8 @@ body {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x proximity;
-  min-height: 0;
+  /* Enforce substantial height so columns are never squashed */
+  min-height: 70vh;
   /* Critical for flex children with overflow */
 }
 
