@@ -166,6 +166,31 @@ body {
 }
 
 /* =========================================
+   PAGE HEADER STYLES (Unified)
+   ========================================= */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  color: var(--slate-500);
+  font-size: 15px;
+}
+
+/* =========================================
    App Layout
    ========================================= */
 .crm-app {

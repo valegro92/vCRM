@@ -80,6 +80,16 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
 
     return (
         <div className="opportunities-view">
+            {/* Header Section */}
+            <div className="page-header">
+                <div>
+                    <h2 className="page-title">Le tue Opportunità</h2>
+                    <p className="page-subtitle">
+                        {filteredOpportunities.length} opportunità • Valore: €{stats.totalValue.toLocaleString()}
+                    </p>
+                </div>
+            </div>
+
             {/* Stats Cards */}
             <div className="kpi-grid">
                 <div className="kpi-card">

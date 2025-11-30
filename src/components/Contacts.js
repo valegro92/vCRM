@@ -60,24 +60,10 @@ export default function Contacts({ contacts, openAddModal, handleDeleteContact }
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Header Section */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '16px'
-            }}>
+            <div className="page-header">
                 <div>
-                    <h2 style={{
-                        fontSize: '28px',
-                        fontWeight: 800,
-                        color: '#0f172a',
-                        marginBottom: '4px',
-                        letterSpacing: '-0.5px'
-                    }}>
-                        I tuoi Contatti
-                    </h2>
-                    <p style={{ color: '#64748b', fontSize: '15px' }}>
+                    <h2 className="page-title">I tuoi Contatti</h2>
+                    <p className="page-subtitle">
                         {filteredContacts.length} contatti • Valore totale: <strong>€{filteredContacts.reduce((sum, c) => sum + (parseFloat(c.value) || 0), 0).toLocaleString()}</strong>
                     </p>
                 </div>

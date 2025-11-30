@@ -88,24 +88,12 @@ export default function Tasks({ tasks, contacts, openAddModal, handleDeleteTask,
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Header Section */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '16px'
-            }}>
+            <div className="page-header">
                 <div>
-                    <h2 style={{
-                        fontSize: '28px',
-                        fontWeight: 800,
-                        color: '#0f172a',
-                        marginBottom: '4px',
-                        letterSpacing: '-0.5px'
-                    }}>
+                    <h2 className="page-title">
                         Le tue Attività
                     </h2>
-                    <p style={{ color: '#64748b', fontSize: '15px' }}>
+                    <p className="page-subtitle">
                         {filteredTasks.length} attività • {stats.pending} da completare
                     </p>
                 </div>
