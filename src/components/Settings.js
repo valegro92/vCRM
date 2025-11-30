@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Lock, Bell, Palette, Database, Shield, Save, Check, Download, AlertTriangle } from 'lucide-react';
 import api from '../api/api';
 
-export default function Settings({ user, contacts, opportunities, tasks, onUserUpdate }) {
+export default function Settings({ user, contacts, opportunities, tasks, onUserUpdate, currentTheme, onThemeChange }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -31,10 +31,17 @@ export default function Settings({ user, contacts, opportunities, tasks, onUserU
   });
 
   const [appearance, setAppearance] = useState({
-    theme: localStorage.getItem('theme') || 'light',
+    theme: currentTheme || 'light',
     compactMode: localStorage.getItem('compactMode') === 'true',
     language: localStorage.getItem('language') || 'it'
   });
+
+  // Sync local state with prop if it changes externally
+  useEffect(() => {
+    if (currentTheme) {
+      setAppearance(prev => ({ ...prev, theme: currentTheme }));
+    }
+  }, [currentTheme]);
 
   const loadStats = React.useCallback(async () => {
     try {
@@ -110,10 +117,9 @@ export default function Settings({ user, contacts, opportunities, tasks, onUserU
   };
 
   const handleSaveAppearance = () => {
-    localStorage.setItem('theme', appearance.theme);
+    // Theme is handled instantly via props
     localStorage.setItem('compactMode', appearance.compactMode.toString());
     localStorage.setItem('language', appearance.language);
-    document.documentElement.setAttribute('data-theme', appearance.theme);
     showSuccess();
   };
 
@@ -400,15 +406,15 @@ export default function Settings({ user, contacts, opportunities, tasks, onUserU
                 <div className="form-group">
                   <label className="form-label">Tema</label>
                   <div className="theme-options">
-                    <div className={`theme-option ${appearance.theme === 'light' ? 'active' : ''}`} onClick={() => setAppearance({ ...appearance, theme: 'light' })}>
+                    <div className={`theme-option ${appearance.theme === 'light' ? 'active' : ''}`} onClick={() => onThemeChange && onThemeChange('light')}>
                       <div className="theme-preview light"></div>
                       <span className="theme-name">Chiaro</span>
                     </div>
-                    <div className={`theme-option ${appearance.theme === 'dark' ? 'active' : ''}`} onClick={() => setAppearance({ ...appearance, theme: 'dark' })}>
+                    <div className={`theme-option ${appearance.theme === 'dark' ? 'active' : ''}`} onClick={() => onThemeChange && onThemeChange('dark')}>
                       <div className="theme-preview dark"></div>
                       <span className="theme-name">Scuro</span>
                     </div>
-                    <div className={`theme-option ${appearance.theme === 'auto' ? 'active' : ''}`} onClick={() => setAppearance({ ...appearance, theme: 'auto' })}>
+                    <div className={`theme-option ${appearance.theme === 'auto' ? 'active' : ''}`} onClick={() => onThemeChange && onThemeChange('auto')}>
                       <div className="theme-preview auto"></div>
                       <span className="theme-name">Auto</span>
                     </div>

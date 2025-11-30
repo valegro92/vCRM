@@ -216,26 +216,7 @@ export default function Tasks({ tasks, contacts, openAddModal, handleDeleteTask,
                         return (
                             <div
                                 key={task.id}
-                                style={{
-                                    background: 'white',
-                                    borderRadius: '20px',
-                                    padding: '20px 24px',
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                                    border: overdue ? '2px solid #fecaca' : '1px solid rgba(226,232,240,0.5)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '20px',
-                                    transition: 'all 0.25s ease',
-                                    opacity: isCompleted ? 0.6 : 1
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateX(4px)';
-                                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.12)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateX(0)';
-                                    e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
-                                }}
+                                className={`task-card-row ${overdue ? 'overdue' : ''} ${isCompleted ? 'completed' : ''}`}
                             >
                                 {/* Checkbox */}
                                 <button

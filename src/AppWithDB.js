@@ -35,6 +35,19 @@ export default function YdeaCRM() {
   // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Theme state
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = (newTheme) => {
+    setTheme(newTheme);
+  };
+
   // Check authentication on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -317,7 +330,9 @@ export default function YdeaCRM() {
               contacts={contacts}
               opportunities={opportunities}
               tasks={tasks}
-              onUserUpdate={setUser}
+              onUserUpdate={handleLoginSuccess}
+              currentTheme={theme}
+              onThemeChange={toggleTheme}
             />
           )}
 

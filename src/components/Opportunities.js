@@ -239,160 +239,73 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
                         return (
                             <div
                                 key={opp.id}
-                                style={{
-                                    background: 'white',
-                                    borderRadius: '20px',
-                                    padding: '20px 24px',
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                                    border: '1px solid rgba(226,232,240,0.5)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '20px',
-                                    transition: 'all 0.25s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateX(4px)';
-                                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.12)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateX(0)';
-                                    e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
-                                }}
+                                className="opportunity-card-row"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, opp)}
                             >
-                                {/* Main Content */}
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {/* Title & Stage Badge */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <span style={{
-                                            fontSize: '16px',
-                                            fontWeight: 700,
-                                            color: '#0f172a'
-                                        }}>
-                                            {opp.title || 'Senza titolo'}
-                                        </span>
-                                        <span className={`stage-badge ${stageClass}`}>
-                                            {opp.stage || 'Lead'}
-                                        </span>
-                                    </div>
-
-                                    {/* Company & Details */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                                        {opp.company && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '14px' }}>
-                                                <Building2 size={16} />
+                                <div className="opp-row-content">
+                                    <div className="opp-row-info">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>{opp.title}</h3>
+                                            <span className={`stage-badge ${opp.stage.toLowerCase().replace(/\s+/g, '-')}`}>
+                                                {opp.stage}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <Building2 size={14} />
                                                 <span>{opp.company}</span>
                                             </div>
-                                        )}
-
-                                        {opp.closeDate && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '14px' }}>
-                                                <Calendar size={16} />
-                                                <span>{new Date(opp.closeDate).toLocaleDateString('it-IT')}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <Calendar size={14} />
+                                                <span>{formatDate(opp.closeDate)}</span>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Value */}
-                                <div style={{
-                                    padding: '8px 16px',
-                                    background: 'linear-gradient(135deg, #10b981, #34d399)',
-                                    borderRadius: '12px',
-                                    fontSize: '15px',
-                                    fontWeight: 700,
-                                    color: 'white',
-                                    whiteSpace: 'nowrap'
-                                }}>
-                                    €{(opp.value || 0).toLocaleString()}
-                                </div>
-
-                                {/* Probability */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
-                                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
-                                        Probabilità
-                                    </span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{
-                                            width: '60px',
-                                            height: '6px',
-                                            background: '#e2e8f0',
-                                            borderRadius: '6px',
-                                            overflow: 'hidden'
-                                        }}>
-                                            <div style={{
-                                                width: `${opp.probability || 0}%`,
-                                                height: '100%',
-                                                background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                                                borderRadius: '6px',
-                                                transition: 'width 0.3s ease'
-                                            }}></div>
                                         </div>
-                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
-                                            {opp.probability || 0}%
-                                        </span>
+                                    </div>
+
+                                    <div className="opp-row-meta">
+                                        <div className="value-badge">
+                                            € {parseFloat(opp.value).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '120px' }}>
+                                            <div style={{ flex: 1, height: '6px', background: 'var(--slate-200)', borderRadius: '3px', overflow: 'hidden' }}>
+                                                <div
+                                                    style={{
+                                                        width: `${opp.probability}%`,
+                                                        height: '100%',
+                                                        background: getProbabilityColor(opp.probability),
+                                                        borderRadius: '3px'
+                                                    }}
+                                                />
+                                            </div>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{opp.probability}%</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div style={{ display: 'flex', gap: '8px' }}>
+                                <div className="opp-row-actions">
                                     <button
+                                        className="icon-btn"
                                         onClick={() => openAddModal('opportunity', opp)}
-                                        style={{
-                                            width: '36px',
-                                            height: '36px',
-                                            borderRadius: '10px',
-                                            border: 'none',
-                                            background: '#f1f5f9',
-                                            color: '#475569',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            transition: 'all 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = '#6366f1';
-                                            e.currentTarget.style.color = 'white';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = '#f1f5f9';
-                                            e.currentTarget.style.color = '#475569';
-                                        }}
+                                        title="Modifica"
                                     >
-                                        <Edit2 size={16} />
+                                        <Edit2 size={18} />
                                     </button>
                                     <button
-                                        onClick={() => handleDeleteOpportunity(opp.id)}
-                                        style={{
-                                            width: '36px',
-                                            height: '36px',
-                                            borderRadius: '10px',
-                                            border: 'none',
-                                            background: '#fef2f2',
-                                            color: '#dc2626',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            transition: 'all 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = '#dc2626';
-                                            e.currentTarget.style.color = 'white';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = '#fef2f2';
-                                            e.currentTarget.style.color = '#dc2626';
-                                        }}
+                                        className="icon-btn danger"
+                                        onClick={() => handleDelete(opp.id)}
+                                        title="Elimina"
                                     >
-                                        <Trash2 size={16} />
+                                        <Trash2 size={18} />
                                     </button>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }
