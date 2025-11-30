@@ -1306,20 +1306,17 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  /* Slightly less rounded for a cleaner look */
   padding: 16px;
   cursor: grab;
   transition: all var(--transition-base);
   position: relative;
-  min-height: 140px;
-  /* Use min-height instead of fixed height */
-  height: auto;
-  /* Allow growth */
+  /* Uniform height */
+  min-height: 160px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 12px;
-  /* Add gap between elements */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .opp-card:hover {

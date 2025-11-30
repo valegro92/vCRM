@@ -359,7 +359,18 @@ export default function Invoices({ opportunities }) {
                     <label>Opportunità Collegata (Chiuso Vinto)</label>
                     <select
                       value={formData.opportunityId}
-                      onChange={e => setFormData({ ...formData, opportunityId: e.target.value })}
+                      onChange={e => {
+                        const oppId = e.target.value;
+                        const selectedOpp = wonOpportunities.find(o => o.id.toString() === oppId);
+                        setFormData({
+                          ...formData,
+                          opportunityId: oppId,
+                          // Auto-link contact if opportunity has one
+                          contactId: selectedOpp ? selectedOpp.contactId : formData.contactId,
+                          // Auto-fill amount if empty
+                          amount: selectedOpp && !formData.amount ? selectedOpp.value : formData.amount
+                        });
+                      }}
                     >
                       <option value="">-- Nessuna --</option>
                       {wonOpportunities.map(opp => (

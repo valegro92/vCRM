@@ -155,7 +155,7 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                                             </div>
                                         </div>
 
-                                        <div className="card-actions" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                                        <div className="card-actions" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color-soft)' }}>
                                             <button
                                                 className="opp-action-btn"
                                                 onClick={(e) => {
@@ -169,16 +169,20 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                                                 }}
                                                 title="Aggiungi attività"
                                                 style={{
-                                                    background: 'var(--bg-subtle)',
+                                                    background: 'transparent',
                                                     border: '1px solid var(--border-color)',
                                                     borderRadius: '6px',
-                                                    padding: '6px',
+                                                    width: '32px',
+                                                    height: '32px',
                                                     cursor: 'pointer',
                                                     color: 'var(--text-secondary)',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center'
+                                                    justifyContent: 'center',
+                                                    transition: 'all 0.2s'
                                                 }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.color = 'var(--primary-600)'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
                                             >
                                                 <CheckSquare size={16} />
                                             </button>
@@ -190,16 +194,20 @@ export default function Pipeline({ opportunities, tasks, setOpportunities, openA
                                                 }}
                                                 title="Vedi dettagli"
                                                 style={{
-                                                    background: 'var(--bg-subtle)',
+                                                    background: 'transparent',
                                                     border: '1px solid var(--border-color)',
                                                     borderRadius: '6px',
-                                                    padding: '6px',
+                                                    width: '32px',
+                                                    height: '32px',
                                                     cursor: 'pointer',
                                                     color: 'var(--text-secondary)',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center'
+                                                    justifyContent: 'center',
+                                                    transition: 'all 0.2s'
                                                 }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.color = 'var(--primary-600)'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
                                             >
                                                 <Eye size={16} />
                                             </button>

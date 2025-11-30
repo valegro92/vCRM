@@ -12,9 +12,9 @@ router.get('/', async (req, res) => {
     const { status, type, opportunityId } = req.query;
     let query;
     let params = [];
-    
+
     const isPostgres = db.type === 'postgres';
-    
+
     if (isPostgres) {
       query = `
         SELECT i.*, 
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
         LEFT JOIN contacts c ON i."contactId" = c.id
         WHERE 1=1
       `;
-      
+
       if (status) {
         params.push(status);
         query += ` AND i.status = $${params.length}`;
@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
         params.push(opportunityId);
         query += ` AND i."opportunityId" = $${params.length}`;
       }
-      
+
       query += ` ORDER BY i."dueDate" ASC`;
     } else {
       query = `
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
         LEFT JOIN contacts c ON i.contactId = c.id
         WHERE 1=1
       `;
-      
+
       if (status) {
         query += ` AND i.status = ?`;
         params.push(status);
@@ -65,10 +65,10 @@ router.get('/', async (req, res) => {
         query += ` AND i.opportunityId = ?`;
         params.push(opportunityId);
       }
-      
+
       query += ` ORDER BY i.dueDate ASC`;
     }
-    
+
     const invoices = await getAll(query, params);
     res.json(invoices);
   } catch (err) {
@@ -81,7 +81,7 @@ router.get('/', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const isPostgres = db.type === 'postgres';
-    
+
     let statsQuery;
     if (isPostgres) {
       statsQuery = `
@@ -103,16 +103,16 @@ router.get('/stats', async (req, res) => {
           COUNT(*) as total,
           COALESCE(SUM(amount), 0) as totalAmount,
           COALESCE(SUM(CASE WHEN status = 'pagata' THEN amount ELSE 0 END), 0) as paidAmount,
-          COALESCE(SUM(CASE WHEN status = 'emessa' AND dueDate < date('now') THEN amount ELSE 0 END), 0) as overdueAmount,
-          COALESCE(SUM(CASE WHEN status = 'emessa' AND dueDate >= date('now') THEN amount ELSE 0 END), 0) as pendingAmount,
+          COALESCE(SUM(CASE WHEN status = 'emessa' AND date(dueDate) < date('now') THEN amount ELSE 0 END), 0) as overdueAmount,
+          COALESCE(SUM(CASE WHEN status = 'emessa' AND date(dueDate) >= date('now') THEN amount ELSE 0 END), 0) as pendingAmount,
           COUNT(CASE WHEN status = 'da_emettere' THEN 1 END) as toIssueCount,
           COUNT(CASE WHEN status = 'emessa' THEN 1 END) as issuedCount,
           COUNT(CASE WHEN status = 'pagata' THEN 1 END) as paidCount,
-          COUNT(CASE WHEN status = 'emessa' AND dueDate < date('now') THEN 1 END) as overdueCount
+          COUNT(CASE WHEN status = 'emessa' AND date(dueDate) < date('now') THEN 1 END) as overdueCount
         FROM invoices
       `;
     }
-    
+
     const stats = await getOne(statsQuery);
     res.json(stats);
   } catch (err) {
@@ -126,7 +126,7 @@ router.get('/:id', async (req, res) => {
   try {
     const isPostgres = db.type === 'postgres';
     let query;
-    
+
     if (isPostgres) {
       query = `
         SELECT i.*, 
@@ -150,13 +150,13 @@ router.get('/:id', async (req, res) => {
         WHERE i.id = ?
       `;
     }
-    
+
     const invoice = await getOne(query, [req.params.id]);
-    
+
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
-    
+
     res.json(invoice);
   } catch (err) {
     console.error('Error fetching invoice:', err);
@@ -169,14 +169,14 @@ router.post('/', async (req, res) => {
   try {
     const { invoiceNumber, opportunityId, contactId, type, amount, issueDate, dueDate, status, notes } = req.body;
     const userId = req.user.id;
-    
+
     if (!invoiceNumber || !amount || !issueDate || !dueDate) {
       return res.status(400).json({ error: 'Invoice number, amount, issue date and due date are required' });
     }
-    
+
     const isPostgres = db.type === 'postgres';
     let result;
-    
+
     if (isPostgres) {
       const query = `
         INSERT INTO invoices ("invoiceNumber", "opportunityId", "contactId", type, amount, "issueDate", "dueDate", status, notes, "userId")
@@ -199,7 +199,7 @@ router.post('/', async (req, res) => {
       ]);
       result = await getOne('SELECT * FROM invoices WHERE id = ?', [insertResult.lastID]);
     }
-    
+
     res.status(201).json(result);
   } catch (err) {
     console.error('Error creating invoice:', err);
@@ -211,10 +211,10 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { invoiceNumber, opportunityId, contactId, type, amount, issueDate, dueDate, paidDate, status, notes } = req.body;
-    
+
     const isPostgres = db.type === 'postgres';
     let result;
-    
+
     if (isPostgres) {
       const query = `
         UPDATE invoices 
@@ -243,11 +243,11 @@ router.put('/:id', async (req, res) => {
       ]);
       result = await getOne('SELECT * FROM invoices WHERE id = ?', [req.params.id]);
     }
-    
+
     if (!result) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
-    
+
     res.json(result);
   } catch (err) {
     console.error('Error updating invoice:', err);
@@ -259,10 +259,10 @@ router.put('/:id', async (req, res) => {
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status, paidDate } = req.body;
-    
+
     const isPostgres = db.type === 'postgres';
     let result;
-    
+
     if (isPostgres) {
       const query = `
         UPDATE invoices 
@@ -281,11 +281,11 @@ router.patch('/:id/status', async (req, res) => {
       await runQuery(query, [status, paidDate || null, req.params.id]);
       result = await getOne('SELECT * FROM invoices WHERE id = ?', [req.params.id]);
     }
-    
+
     if (!result) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
-    
+
     res.json(result);
   } catch (err) {
     console.error('Error updating invoice status:', err);
@@ -297,13 +297,13 @@ router.patch('/:id/status', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const isPostgres = db.type === 'postgres';
-    
+
     if (isPostgres) {
       await db.pool.query('DELETE FROM invoices WHERE id = $1', [req.params.id]);
     } else {
       await runQuery('DELETE FROM invoices WHERE id = ?', [req.params.id]);
     }
-    
+
     res.json({ success: true, message: 'Invoice deleted successfully' });
   } catch (err) {
     console.error('Error deleting invoice:', err);
