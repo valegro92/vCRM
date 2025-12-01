@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { Euro, Target, TrendingUp, CheckSquare, ArrowUpRight, ArrowDownRight, Users, Clock, Zap, ChevronRight, Plus, Phone } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine, AreaChart, Area } from 'recharts';
+import { Euro, Target, TrendingUp, CheckSquare, ArrowUpRight, ArrowDownRight, Users, Clock, Zap, ChevronRight, Plus, Phone, Award, Calendar } from 'lucide-react';
 import pipelineStages from '../constants/pipelineStages';
 import COLORS from '../constants/colors';
+import { MONTHLY_TARGETS, ANNUAL_TARGET } from '../constants/targets';
 
 const KPICard = ({ title, value, change, changeType, icon, color, onClick }) => (
     <div className="kpi-card" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
@@ -26,400 +27,265 @@ const QuickAction = ({ icon, label, color, onClick }) => (
 );
 
 export default function Dashboard({ opportunities, tasks, contacts, setActiveView }) {
-    const [timeRange, setTimeRange] = useState('month');
+    const [timeRange, setTimeRange] = useState('year');
 
-    // Calcoli KPI con confronto periodo precedente
+    // Calcoli KPI
     const kpiData = useMemo(() => {
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        // Filtra opportunità per periodo corrente e precedente
-        // Filtra opportunità per periodo corrente e precedente
+        // Target Mese Corrente
+        const currentMonthTarget = MONTHLY_TARGETS[currentMonth]?.target || 0;
 
-        const lastMonthOpps = opportunities.filter(o => {
-            if (!o.closeDate) return false;
-            const d = new Date(o.closeDate);
-            const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-            const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-            return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
-        });
+        // Fatturato Mese Corrente (Opportunità Vinte)
+        const currentMonthRevenue = opportunities
+            .filter(o => {
+                if (!o.closeDate) return false;
+                const d = new Date(o.closeDate);
+                return d.getMonth() === currentMonth &&
+                    d.getFullYear() === currentYear &&
+                    (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
+            })
+            .reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
+
+        // Distanza dal target
+        const targetGap = currentMonthTarget - currentMonthRevenue;
+        const targetProgress = currentMonthTarget > 0 ? (currentMonthRevenue / currentMonthTarget) * 100 : 0;
+
+        // Fatturato Annuale
+        const annualRevenue = opportunities
+            .filter(o => {
+                if (!o.closeDate) return false;
+                const d = new Date(o.closeDate);
+                return d.getFullYear() === currentYear &&
+                    (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
+            })
+            .reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
+
+        const annualProgress = (annualRevenue / ANNUAL_TARGET) * 100;
 
         // Pipeline totale
         const totalPipeline = opportunities.filter(o =>
             !o.stage?.toLowerCase().includes('chiuso')
         ).reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
 
-        const lastMonthPipeline = lastMonthOpps.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
-        const pipelineChange = lastMonthPipeline > 0
-            ? (((totalPipeline - lastMonthPipeline) / lastMonthPipeline) * 100).toFixed(1)
-            : 0;
-
-        // Pipeline ponderata
-        const weightedPipeline = opportunities.filter(o =>
-            !o.stage?.toLowerCase().includes('chiuso')
-        ).reduce((sum, o) => sum + ((parseFloat(o.value) || 0) * (parseFloat(o.probability) || 0) / 100), 0);
-
-        // Tasso conversione
-        const wonDeals = opportunities.filter(o =>
-            o.stage?.toLowerCase().includes('vinto') ||
-            o.originalStage?.toLowerCase().includes('vinto')
-        ).length;
-
-        const closedDeals = opportunities.filter(o =>
-            o.stage?.toLowerCase().includes('chiuso')
-        ).length;
-
-        const conversionRate = closedDeals > 0 ? ((wonDeals / closedDeals) * 100).toFixed(1) : 0;
-
-        // Attività in scadenza oggi
+        // Attività urgenti
         const today = new Date().toISOString().split('T')[0];
         const dueTodayCount = tasks.filter(t =>
             t.dueDate === today && t.status !== 'Completata'
         ).length;
 
-        const openTasks = tasks.filter(t => t.status !== 'Completata').length;
-
         return {
+            currentMonthRevenue,
+            currentMonthTarget,
+            targetGap,
+            targetProgress,
+            annualRevenue,
+            annualProgress,
             totalPipeline,
-            pipelineChange,
-            weightedPipeline,
-            conversionRate,
-            openTasks,
             dueTodayCount,
-            wonDeals,
-            totalContacts: contacts.length
+            openTasks: tasks.filter(t => t.status !== 'Completata').length
         };
-    }, [opportunities, tasks, contacts]);
+    }, [opportunities, tasks]);
 
-    // Dati vendite mensili calcolati
-    const salesData = useMemo(() => {
-        const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    // Dati Grafico Target vs Actual
+    const chartData = useMemo(() => {
         const currentYear = new Date().getFullYear();
 
-        const monthlyData = months.map((m, idx) => ({
-            month: m,
-            vendite: 0,
-            opportunita: 0,
-            target: 50000
-        }));
+        return MONTHLY_TARGETS.map(t => {
+            const actual = opportunities
+                .filter(o => {
+                    if (!o.closeDate) return false;
+                    const d = new Date(o.closeDate);
+                    return d.getMonth() === t.month &&
+                        d.getFullYear() === currentYear &&
+                        (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
+                })
+                .reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
 
-        opportunities.forEach(opp => {
-            if (opp.closeDate) {
-                const date = new Date(opp.closeDate);
-                if (date.getFullYear() === currentYear) {
-                    const monthIdx = date.getMonth();
-                    if (monthlyData[monthIdx]) {
-                        if (opp.stage?.toLowerCase().includes('vinto') || opp.originalStage?.toLowerCase().includes('vinto')) {
-                            monthlyData[monthIdx].vendite += opp.value || 0;
-                        }
-                        monthlyData[monthIdx].opportunita++;
-                    }
-                }
-            }
+            return {
+                month: t.label,
+                target: t.target,
+                actual: actual,
+                gap: actual - t.target
+            };
         });
-
-        return monthlyData;
     }, [opportunities]);
 
-    // Pipeline per fase
-    const pipelineData = useMemo(() => {
-        return pipelineStages.map(stage => ({
-            name: stage,
-            value: opportunities.filter(o => o.stage === stage).reduce((sum, o) => sum + (o.value || 0), 0),
-            count: opportunities.filter(o => o.stage === stage).length
-        })).filter(d => d.value > 0);
-    }, [opportunities]);
+    // Dati Trend Valore Medio Deal
+    const avgDealValueData = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
-    // Attività per tipo
-    const tasksByType = useMemo(() => {
-        const types = { 'Chiamata': 0, 'Email': 0, 'Meeting': 0, 'Documento': 0 };
-        tasks.forEach(t => {
-            if (types[t.type] !== undefined) {
-                types[t.type]++;
-            }
+        return months.map((monthName, index) => {
+            const monthDeals = opportunities.filter(o => {
+                if (!o.closeDate) return false;
+                const d = new Date(o.closeDate);
+                return d.getMonth() === index &&
+                    d.getFullYear() === currentYear &&
+                    (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
+            });
+
+            const totalValue = monthDeals.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
+            const avgValue = monthDeals.length > 0 ? totalValue / monthDeals.length : 0;
+
+            return {
+                month: monthName,
+                value: avgValue,
+                count: monthDeals.length
+            };
         });
-        return Object.entries(types).map(([name, value]) => ({ name, value }));
-    }, [tasks]);
-
-    // Prossime attività (entro 7 giorni)
-    const upcomingTasks = useMemo(() => {
-        const today = new Date();
-        const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        return tasks
-            .filter(t => {
-                if (t.status === 'Completata') return false;
-                if (!t.dueDate) return true;
-                const dueDate = new Date(t.dueDate);
-                return dueDate <= nextWeek;
-            })
-            .sort((a, b) => {
-                if (!a.dueDate) return 1;
-                if (!b.dueDate) return -1;
-                return new Date(a.dueDate) - new Date(b.dueDate);
-            })
-            .slice(0, 5);
-    }, [tasks]);
-
-    // Opportunità hot (alta probabilità, valore alto)
-    const hotOpportunities = useMemo(() => {
-        return opportunities
-            .filter(o => !o.stage?.toLowerCase().includes('chiuso'))
-            .sort((a, b) => ((b.value || 0) * (b.probability || 0)) - ((a.value || 0) * (a.probability || 0)))
-            .slice(0, 4);
     }, [opportunities]);
 
     const formatCurrency = (value) => {
         if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
         if (value >= 1000) return `€${(value / 1000).toFixed(0)}K`;
-        return `€${value}`;
+        return `€${value.toLocaleString('it-IT')}`;
     };
 
-    const getChangeType = (value) => {
-        if (value > 0) return 'positive';
-        if (value < 0) return 'negative';
-        return 'neutral';
+    // Generazione Messaggio AI
+    const getAIMessage = () => {
+        const { targetGap, dueTodayCount, currentMonthRevenue, currentMonthTarget } = kpiData;
+
+        if (dueTodayCount > 0) {
+            return `Hai ${dueTodayCount} attività in scadenza oggi. Inizia da quelle per mantenere il ritmo!`;
+        }
+
+        if (targetGap > 0) {
+            return `Sei a ${formatCurrency(currentMonthRevenue)} questo mese. Ti mancano ${formatCurrency(targetGap)} per raggiungere l'obiettivo di ${formatCurrency(currentMonthTarget)}.`;
+        }
+
+        if (targetGap <= 0 && currentMonthTarget > 0) {
+            return `Fantastico! Hai già superato l'obiettivo mensile di ${formatCurrency(Math.abs(targetGap))}. Punta al record annuale! 🚀`;
+        }
+
+        return "Tutto tranquillo oggi. È un buon momento per fare follow-up sui clienti inattivi.";
     };
 
     return (
         <div className="dashboard">
-
-            <div className="dashboard-header">
-                <div className="dashboard-welcome">
-                    <h1>👋 Bentornato!</h1>
-                    <p>Ecco cosa sta succedendo con il tuo CRM oggi</p>
+            {/* AI Daily Briefing Section */}
+            <div className="ai-briefing-section">
+                <div className="ai-briefing-header">
+                    <div className="ai-avatar">
+                        <Zap size={24} color="white" fill="white" />
+                    </div>
+                    <div className="ai-content">
+                        <h2>Buongiorno, Valentino!</h2>
+                        <p className="ai-message">{getAIMessage()}</p>
+                    </div>
                 </div>
-                <div className="quick-actions">
-                    <QuickAction
-                        icon={<Phone size={16} />}
-                        label="Nuova Chiamata"
-                        color="blue"
-                        onClick={() => setActiveView('tasks')}
-                    />
-                    <QuickAction
-                        icon={<Plus size={16} />}
-                        label="Nuova Opportunità"
-                        color="green"
-                        onClick={() => setActiveView('opportunities')}
-                    />
-                    <QuickAction
-                        icon={<Users size={16} />}
-                        label="Nuovo Contatto"
-                        color="purple"
-                        onClick={() => setActiveView('contacts')}
-                    />
+                <div className="ai-stats-row">
+                    <div className="ai-stat">
+                        <span className="label">Obiettivo Mese</span>
+                        <span className="value">{Math.round(kpiData.targetProgress)}%</span>
+                        <div className="progress-bar-sm">
+                            <div className="progress-fill" style={{ width: `${Math.min(kpiData.targetProgress, 100)}%`, background: kpiData.targetProgress >= 100 ? '#10b981' : '#3b82f6' }}></div>
+                        </div>
+                    </div>
+                    <div className="ai-stat">
+                        <span className="label">Obiettivo Anno (€85k)</span>
+                        <span className="value">{Math.round(kpiData.annualProgress)}%</span>
+                        <div className="progress-bar-sm">
+                            <div className="progress-fill" style={{ width: `${Math.min(kpiData.annualProgress, 100)}%`, background: '#8b5cf6' }}></div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <div className="kpi-grid">
-                <KPICard
-                    title="Pipeline Totale"
-                    value={formatCurrency(kpiData.totalPipeline)}
-                    change={`${kpiData.pipelineChange > 0 ? '+' : ''}${kpiData.pipelineChange}% vs mese scorso`}
-                    changeType={getChangeType(parseFloat(kpiData.pipelineChange))}
-                    icon={<Euro size={24} />}
-                    color="blue"
-                    onClick={() => setActiveView('pipeline')}
-                />
-                <KPICard
-                    title="Pipeline Ponderata"
-                    value={formatCurrency(kpiData.weightedPipeline)}
-                    change={`${kpiData.wonDeals} deal vinti`}
-                    changeType="positive"
-                    icon={<Target size={24} />}
-                    color="green"
-                    onClick={() => setActiveView('pipeline')}
-                />
-                <KPICard
-                    title="Tasso Conversione"
-                    value={`${kpiData.conversionRate}%`}
-                    change={`su ${opportunities.length} totali`}
-                    changeType="neutral"
-                    icon={<TrendingUp size={24} />}
-                    color="purple"
-                    onClick={() => setActiveView('opportunities')}
-                />
-                <KPICard
-                    title="Attività Aperte"
-                    value={kpiData.openTasks}
-                    change={kpiData.dueTodayCount > 0 ? `${kpiData.dueTodayCount} in scadenza oggi` : 'Nessuna urgente'}
-                    changeType={kpiData.dueTodayCount > 0 ? 'negative' : 'neutral'}
-                    icon={<CheckSquare size={24} />}
-                    color="orange"
-                    onClick={() => setActiveView('tasks')}
-                />
             </div>
 
             <div className="charts-row">
-                <div className="chart-card">
+                <div className="chart-card" style={{ width: '100%' }}>
                     <div className="chart-header">
-                        <h3>📈 Andamento Vendite {new Date().getFullYear()}</h3>
-                        <select
-                            className="chart-filter"
-                            value={timeRange}
-                            onChange={(e) => setTimeRange(e.target.value)}
-                        >
-                            <option value="month">Ultimi 6 mesi</option>
-                            <option value="year">Anno corrente</option>
-                        </select>
+                        <div>
+                            <h3>📈 Trend Valore Medio Deal</h3>
+                            <p className="subtitle">Evoluzione del valore medio dei contratti chiusi</p>
+                        </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={280}>
-                        <LineChart data={salesData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-                            <YAxis stroke="#64748b" fontSize={12} tickFormatter={(v) => formatCurrency(v)} />
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={avgDealValueData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `€${v / 1000}k`} />
                             <Tooltip
-                                formatter={(value, name) => [formatCurrency(value), name === 'vendite' ? 'Vendite Chiuse' : 'Target']}
-                                contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                                cursor={{ fill: '#f1f5f9' }}
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                formatter={(value) => [formatCurrency(value), 'Valore Medio']}
                             />
-                            <Line type="monotone" dataKey="vendite" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2 }} name="Vendite" />
-                            <Line type="monotone" dataKey="target" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Target" />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-
-                <div className="chart-card">
-                    <div className="chart-header">
-                        <h3>🎯 Pipeline per Fase</h3>
-                    </div>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                            <Pie
-                                data={pipelineData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={50}
-                                outerRadius={80}
-                                paddingAngle={3}
-                                dataKey="value"
-                            >
-                                {pipelineData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => formatCurrency(value)} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                    <div className="pie-legend">
-                        {pipelineData.map((entry, index) => (
-                            <div key={entry.name} className="legend-item">
-                                <span className="legend-dot" style={{ background: COLORS[index % COLORS.length] }}></span>
-                                <span>{entry.name} ({entry.count})</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="bottom-row">
-                <div className="recent-card">
-                    <div className="card-header">
-                        <h3>🔥 Opportunità Hot</h3>
-                        <button className="text-btn" onClick={() => setActiveView('opportunities')}>
-                            Vedi tutte <ChevronRight size={16} />
-                        </button>
-                    </div>
-                    <div className="recent-list">
-                        {hotOpportunities.length > 0 ? hotOpportunities.map(opp => (
-                            <div key={opp.id} className="recent-item">
-                                <div className="recent-info">
-                                    <span className="recent-title">
-                                        {opp.title}
-                                        {(opp.probability || 0) >= 70 && <span className="hot-badge">HOT</span>}
-                                    </span>
-                                    <span className="recent-subtitle">{opp.company} • {opp.probability || 0}% probabilità</span>
-                                </div>
-                                <div className="recent-meta">
-                                    <span className="recent-value">{formatCurrency(opp.value || 0)}</span>
-                                    <span className="stage-badge">{opp.stage}</span>
-                                </div>
-                            </div>
-                        )) : (
-                            <p style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>
-                                Nessuna opportunità attiva
-                            </p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="recent-card">
-                    <div className="card-header">
-                        <h3>📋 Prossime Attività</h3>
-                        <button className="text-btn" onClick={() => setActiveView('tasks')}>
-                            Vedi tutte <ChevronRight size={16} />
-                        </button>
-                    </div>
-                    <div className="recent-list">
-                        {upcomingTasks.length > 0 ? upcomingTasks.map(task => (
-                            <div key={task.id} className="recent-item">
-                                <div className="recent-info">
-                                    <span className="recent-title">{task.title}</span>
-                                    <span className="recent-subtitle">
-                                        {task.type} • {contacts.find(c => c.id === task.contactId)?.name || 'Non assegnato'}
-                                    </span>
-                                </div>
-                                <div className="recent-meta">
-                                    <span className={`priority-badge ${task.priority?.toLowerCase()}`}>{task.priority}</span>
-                                    <span className="due-date">
-                                        {task.dueDate ? new Date(task.dueDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) : 'Nessuna data'}
-                                    </span>
-                                </div>
-                            </div>
-                        )) : (
-                            <p style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>
-                                Nessuna attività in programma
-                            </p>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="charts-row">
-                <div className="insights-card">
-                    <h3><Zap size={20} /> Insights AI</h3>
-                    <div className="insight-item">
-                        <div className="insight-icon"><TrendingUp size={18} /></div>
-                        <span>
-                            {kpiData.conversionRate > 50
-                                ? `Ottimo tasso di conversione! Sei sopra la media del settore.`
-                                : `Il tasso di conversione può migliorare. Considera di qualificare meglio i lead.`
-                            }
-                        </span>
-                    </div>
-                    <div className="insight-item">
-                        <div className="insight-icon"><Clock size={18} /></div>
-                        <span>
-                            {kpiData.openTasks > 10
-                                ? `Hai ${kpiData.openTasks} attività aperte. Prioritizza quelle urgenti!`
-                                : `Le tue attività sono sotto controllo. Continua così!`
-                            }
-                        </span>
-                    </div>
-                    <div className="insight-item">
-                        <div className="insight-icon"><Euro size={18} /></div>
-                        <span>
-                            {hotOpportunities.length > 0
-                                ? `Focus su ${hotOpportunities[0]?.company}: opportunità da ${formatCurrency(hotOpportunities[0]?.value || 0)}`
-                                : `Crea nuove opportunità per alimentare la pipeline.`
-                            }
-                        </span>
-                    </div>
-                </div>
-
-                <div className="chart-card">
-                    <div className="chart-header">
-                        <h3>📊 Attività per Tipo</h3>
-                    </div>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={tasksByType}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
-                            <YAxis stroke="#64748b" fontSize={12} />
-                            <Tooltip />
-                            <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
                         </BarChart>
                     </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="dashboard-actions-row">
+                <QuickAction icon={<Phone size={18} />} label="Nuova Chiamata" color="blue" onClick={() => setActiveView('tasks')} />
+                <QuickAction icon={<Plus size={18} />} label="Nuova Opportunità" color="green" onClick={() => setActiveView('opportunities')} />
+                <QuickAction icon={<Users size={18} />} label="Nuovo Contatto" color="purple" onClick={() => setActiveView('contacts')} />
+            </div>
+
+            {/* Main Charts Section */}
+            <div className="charts-grid-new">
+                {/* Target vs Actual Chart */}
+                <div className="chart-card large">
+                    <div className="chart-header">
+                        <div>
+                            <h3>🎯 Performance 2026</h3>
+                            <p className="subtitle">Fatturato Reale vs Obiettivi Mensili</p>
+                        </div>
+                        <div className="chart-legend">
+                            <span className="legend-item"><span className="dot target"></span>Target</span>
+                            <span className="legend-item"><span className="dot actual"></span>Reale</span>
+                        </div>
+                    </div>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `€${v / 1000}k`} />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                formatter={(value, name) => [formatCurrency(value), name === 'actual' ? 'Fatturato' : 'Obiettivo']}
+                            />
+                            <Area type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorActual)" />
+                            <Line type="step" dataKey="target" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* Side Stats */}
+                <div className="stats-column">
+                    <div className="stat-box">
+                        <div className="stat-icon-bg blue"><Euro size={20} /></div>
+                        <div className="stat-info">
+                            <span className="stat-label">Fatturato Annuo</span>
+                            <span className="stat-value">{formatCurrency(kpiData.annualRevenue)}</span>
+                            <span className="stat-sub">su {formatCurrency(ANNUAL_TARGET)}</span>
+                        </div>
+                    </div>
+                    <div className="stat-box">
+                        <div className="stat-icon-bg green"><TrendingUp size={20} /></div>
+                        <div className="stat-info">
+                            <span className="stat-label">Pipeline Attiva</span>
+                            <span className="stat-value">{formatCurrency(kpiData.totalPipeline)}</span>
+                            <span className="stat-sub">Valore potenziale</span>
+                        </div>
+                    </div>
+                    <div className="stat-box">
+                        <div className="stat-icon-bg orange"><CheckSquare size={20} /></div>
+                        <div className="stat-info">
+                            <span className="stat-label">Da Fare</span>
+                            <span className="stat-value">{kpiData.openTasks}</span>
+                            <span className="stat-sub">{kpiData.dueTodayCount} in scadenza oggi</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
