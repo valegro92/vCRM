@@ -5,34 +5,15 @@ import pipelineStages from '../constants/pipelineStages';
 export default function Opportunities({ opportunities, openAddModal, handleDeleteOpportunity }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStage, setFilterStage] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('active'); // New: active, won, lost, all
     const [sortBy, setSortBy] = useState('value');
     const [sortOrder, setSortOrder] = useState('desc');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedYear, setSelectedYear] = useState('all'); // Year filter
 
-    // Stats
-    const stats = useMemo(() => {
-        const active = opportunities.filter(o => !o.stage?.toLowerCase().includes('chiuso'));
-        const totalValue = active.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
-        const avgProbability = active.length > 0
-            ? Math.round(active.reduce((sum, o) => sum + (parseFloat(o.probability) || 0), 0) / active.length)
-            : 0;
-        const weighted = active.reduce((sum, o) => sum + ((parseFloat(o.value) || 0) * (parseFloat(o.probability) || 0) / 100), 0);
-        return { count: active.length, totalValue, avgProbability, weighted };
-    }, [opportunities]);
-
-    // Filtered and sorted opportunities
-    const filteredOpportunities = useMemo(() => {
+    // Filtered opportunities for stats (before search/sort)
+    const baseFilteredOpps = useMemo(() => {
         let result = [...opportunities];
-
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(o =>
-                o.title?.toLowerCase().includes(term) ||
-                o.company?.toLowerCase().includes(term) ||
-                o.owner?.toLowerCase().includes(term)
-            );
-        }
 
         // Year filter
         if (selectedYear !== 'all') {
@@ -41,6 +22,42 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
                 const oppYear = new Date(o.closeDate).getFullYear();
                 return oppYear === parseInt(selectedYear);
             });
+        }
+
+        // Status filter
+        if (filterStatus === 'active') {
+            result = result.filter(o => !o.stage?.toLowerCase().includes('chiuso'));
+        } else if (filterStatus === 'won') {
+            result = result.filter(o => o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
+        } else if (filterStatus === 'lost') {
+            result = result.filter(o => o.stage === 'Chiuso Perso' || o.originalStage === 'Chiuso Perso');
+        }
+        // 'all' shows everything
+
+        return result;
+    }, [opportunities, selectedYear, filterStatus]);
+
+    // Stats based on filtered data
+    const stats = useMemo(() => {
+        const totalValue = baseFilteredOpps.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
+        const avgProbability = baseFilteredOpps.length > 0
+            ? Math.round(baseFilteredOpps.reduce((sum, o) => sum + (parseFloat(o.probability) || 0), 0) / baseFilteredOpps.length)
+            : 0;
+        const weighted = baseFilteredOpps.reduce((sum, o) => sum + ((parseFloat(o.value) || 0) * (parseFloat(o.probability) || 0) / 100), 0);
+        return { count: baseFilteredOpps.length, totalValue, avgProbability, weighted };
+    }, [baseFilteredOpps]);
+
+    // Filtered and sorted opportunities (adds search and stage filters to baseFilteredOpps)
+    const filteredOpportunities = useMemo(() => {
+        let result = [...baseFilteredOpps];
+
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(o =>
+                o.title?.toLowerCase().includes(term) ||
+                o.company?.toLowerCase().includes(term) ||
+                o.owner?.toLowerCase().includes(term)
+            );
         }
 
         if (filterStage !== 'all') {
@@ -73,7 +90,7 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
         });
 
         return result;
-    }, [opportunities, searchTerm, filterStage, sortBy, sortOrder, selectedYear]);
+    }, [baseFilteredOpps, searchTerm, filterStage, sortBy, sortOrder]);
 
     const formatCurrency = (value) => {
         if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
@@ -86,7 +103,7 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
         return slug;
     };
 
-    const hasActiveFilters = filterStage !== 'all' || searchTerm;
+    const hasActiveFilters = filterStage !== 'all' || searchTerm || filterStatus !== 'active' || selectedYear !== 'all';
 
     // Helper functions
     const handleDragStart = (e, opp) => {
@@ -121,18 +138,32 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
                         {filteredOpportunities.length} opportunità • Valore: €{stats.totalValue.toLocaleString()}
                     </p>
                 </div>
-                {/* Year Filter */}
-                <select
-                    className="year-filter"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    style={{ height: '44px' }}
-                >
-                    <option value="all">Tutti gli anni</option>
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                </select>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    {/* Status Filter */}
+                    <select
+                        className="year-filter"
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        style={{ height: '44px', minWidth: '150px' }}
+                    >
+                        <option value="active">Attive</option>
+                        <option value="won">Chiuso Vinto</option>
+                        <option value="lost">Chiuso Perso</option>
+                        <option value="all">Tutte</option>
+                    </select>
+                    {/* Year Filter */}
+                    <select
+                        className="year-filter"
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                        style={{ height: '44px' }}
+                    >
+                        <option value="all">Tutti gli anni</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -235,7 +266,12 @@ export default function Opportunities({ opportunities, openAddModal, handleDelet
                     </div>
                     {hasActiveFilters && (
                         <button
-                            onClick={() => { setFilterStage('all'); setSearchTerm(''); }}
+                            onClick={() => {
+                                setFilterStage('all');
+                                setSearchTerm('');
+                                setFilterStatus('active');
+                                setSelectedYear('all');
+                            }}
                             style={{ background: 'none', border: 'none', color: 'var(--gray-500)', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
                         >
                             Cancella filtri
