@@ -124,15 +124,16 @@ export default function Invoices({ opportunities }) {
 
   const getStatusColor = (status, dueDate) => {
     if (status === 'pagata') return 'success';
-    if (status === 'emessa' && new Date(dueDate) < new Date()) return 'danger';
-    if (status === 'emessa') return 'warning';
+    if ((status === 'emessa' || status === 'da_pagare') && new Date(dueDate) < new Date()) return 'danger';
+    if (status === 'emessa' || status === 'da_pagare') return 'warning';
     return 'info';
   };
 
   const getStatusLabel = (status, dueDate) => {
     if (status === 'pagata') return 'Pagata';
-    if (status === 'emessa' && new Date(dueDate) < new Date()) return 'Scaduta';
+    if ((status === 'emessa' || status === 'da_pagare') && new Date(dueDate) < new Date()) return 'Scaduta';
     if (status === 'emessa') return 'Da incassare';
+    if (status === 'da_pagare') return 'Da pagare';
     return 'Da emettere';
   };
 
@@ -202,7 +203,7 @@ export default function Invoices({ opportunities }) {
       <div className="view-toolbar">
         <div className="toolbar-left">
           <div className="filter-tags">
-            {['all', 'da_emettere', 'emessa', 'pagata'].map(status => (
+            {['all', 'da_emettere', 'emessa', 'da_pagare', 'pagata'].map(status => (
               <button
                 key={status}
                 className={`filter-tag ${statusFilter === status ? 'active' : ''}`}
@@ -210,7 +211,8 @@ export default function Invoices({ opportunities }) {
               >
                 {status === 'all' ? 'Tutte' :
                   status === 'da_emettere' ? 'Da Emettere' :
-                    status === 'emessa' ? 'Emesse' : 'Pagate'}
+                    status === 'emessa' ? 'Emesse' :
+                      status === 'da_pagare' ? 'Da Pagare' : 'Saldate'}
               </button>
             ))}
           </div>
@@ -419,9 +421,18 @@ export default function Invoices({ opportunities }) {
                         value={formData.status}
                         onChange={e => setFormData({ ...formData, status: e.target.value })}
                       >
-                        <option value="da_emettere">Da Emettere</option>
-                        <option value="emessa">Emessa</option>
-                        <option value="pagata">Pagata</option>
+                        {formData.type === 'emessa' ? (
+                          <>
+                            <option value="da_emettere">Da Emettere</option>
+                            <option value="emessa">Emessa</option>
+                            <option value="pagata">Incassata</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="da_pagare">Da Pagare</option>
+                            <option value="pagata">Pagata</option>
+                          </>
+                        )}
                       </select>
                     </div>
                   </div>
@@ -448,8 +459,9 @@ export default function Invoices({ opportunities }) {
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </div >
+      )
+      }
 
       <style jsx>{`
         .invoices-view {
@@ -631,6 +643,6 @@ export default function Invoices({ opportunities }) {
           }
         }
       `}</style>
-    </div>
+    </div >
   );
 }

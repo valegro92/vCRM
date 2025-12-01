@@ -101,14 +101,14 @@ router.get('/stats', async (req, res) => {
       statsQuery = `
         SELECT 
           COUNT(*) as total,
-          COALESCE(SUM(amount), 0) as totalAmount,
-          COALESCE(SUM(CASE WHEN status = 'pagata' THEN amount ELSE 0 END), 0) as paidAmount,
-          COALESCE(SUM(CASE WHEN status = 'emessa' AND date(dueDate) < date('now') THEN amount ELSE 0 END), 0) as overdueAmount,
-          COALESCE(SUM(CASE WHEN status = 'emessa' AND date(dueDate) >= date('now') THEN amount ELSE 0 END), 0) as pendingAmount,
+          COALESCE(SUM(CAST(amount AS NUMERIC)), 0) as totalAmount,
+          COALESCE(SUM(CASE WHEN status = 'pagata' THEN CAST(amount AS NUMERIC) ELSE 0 END), 0) as paidAmount,
+          COALESCE(SUM(CASE WHEN (status = 'emessa' OR status = 'da_pagare') AND date(dueDate) < date('now') THEN CAST(amount AS NUMERIC) ELSE 0 END), 0) as overdueAmount,
+          COALESCE(SUM(CASE WHEN (status = 'emessa' OR status = 'da_pagare') AND date(dueDate) >= date('now') THEN CAST(amount AS NUMERIC) ELSE 0 END), 0) as pendingAmount,
           COUNT(CASE WHEN status = 'da_emettere' THEN 1 END) as toIssueCount,
-          COUNT(CASE WHEN status = 'emessa' THEN 1 END) as issuedCount,
+          COUNT(CASE WHEN status = 'emessa' OR status = 'da_pagare' THEN 1 END) as issuedCount,
           COUNT(CASE WHEN status = 'pagata' THEN 1 END) as paidCount,
-          COUNT(CASE WHEN status = 'emessa' AND date(dueDate) < date('now') THEN 1 END) as overdueCount
+          COUNT(CASE WHEN (status = 'emessa' OR status = 'da_pagare') AND date(dueDate) < date('now') THEN 1 END) as overdueCount
         FROM invoices
       `;
     }

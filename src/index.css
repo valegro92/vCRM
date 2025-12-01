@@ -1310,13 +1310,15 @@ body {
   cursor: grab;
   transition: all var(--transition-base);
   position: relative;
-  /* Uniform height */
-  min-height: 160px;
+  /* Uniform height - Fixed */
+  height: 220px;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
 
 .opp-card:hover {
