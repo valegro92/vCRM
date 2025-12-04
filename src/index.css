@@ -1851,6 +1851,10 @@ body {
 }
 
 /* Kanban Board - Fixed Height with Internal Scroll */
+.kanban-wrapper {
+  margin-top: var(--space-1);
+}
+
 .kanban-board {
   display: flex;
   gap: var(--space-4);
@@ -1860,13 +1864,71 @@ body {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: none;
-  /* Removed proximity for smoother scroll */
-  height: 75vh;
-  /* Fixed height for the board */
-  min-height: 600px;
-  /* Minimum height to prevent stunting */
+  height: 65vh;
+  min-height: 500px;
   flex-shrink: 0;
-  /* Prevent shrinking */
+}
+
+/* Mobile: Stack columns vertically as accordion */
+@media (max-width: 768px) {
+  .kanban-board {
+    flex-direction: column;
+    height: auto;
+    min-height: auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .kanban-column {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .column-header {
+    cursor: pointer;
+  }
+
+  .column-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .mobile-toggle {
+    font-size: 10px;
+    opacity: 0.8;
+  }
+
+  .column-content {
+    display: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .column-content.show {
+    display: flex;
+    max-height: 2000px;
+  }
+
+  .kanban-column.expanded {
+    border: 2px solid var(--primary-300);
+  }
+}
+
+/* Hide mobile toggle on desktop */
+@media (min-width: 769px) {
+  .mobile-toggle {
+    display: none;
+  }
+
+  .column-header-right {
+    display: flex;
+    align-items: center;
+  }
 }
 
 .kanban-board::-webkit-scrollbar {
@@ -2035,6 +2097,171 @@ body {
   box-shadow: var(--shadow-md);
   border-color: var(--primary-300);
   transform: translateY(-2px);
+}
+
+/* Opportunity Card Actions */
+.opp-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color-soft);
+}
+
+.opp-action-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.opp-action-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--primary-600);
+  border-color: var(--primary-300);
+}
+
+/* Empty column message */
+.empty-column {
+  padding: 20px;
+  text-align: center;
+  color: var(--slate-400);
+  font-size: 13px;
+}
+
+/* Pipeline Chart Section */
+.pipeline-chart-section {
+  margin-top: var(--space-6);
+}
+
+.pipeline-chart-card {
+  background: white;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--slate-100);
+}
+
+.chart-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin-bottom: var(--space-5);
+}
+
+/* Donut Chart */
+.donut-chart {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+}
+
+.donut-visual {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+}
+
+.donut-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.donut-total {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--slate-900);
+}
+
+.donut-label {
+  font-size: 11px;
+  color: var(--slate-400);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-name {
+  flex: 1;
+  color: var(--slate-600);
+}
+
+.legend-percentage {
+  font-weight: 700;
+  color: var(--slate-900);
+  min-width: 40px;
+  text-align: right;
+}
+
+.no-data {
+  text-align: center;
+  color: var(--slate-400);
+  padding: 40px;
+  font-size: 14px;
+}
+
+/* Responsive Donut Chart */
+@media (max-width: 768px) {
+  .donut-chart {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .donut-visual {
+    width: 150px;
+    height: 150px;
+  }
+
+  .donut-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .legend-row {
+    flex-basis: calc(50% - 6px);
+    font-size: 12px;
+  }
 }
 
 /* Opportunity Row (List View) */
