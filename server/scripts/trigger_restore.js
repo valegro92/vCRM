@@ -7,7 +7,7 @@ if (!myFetch) {
 }
 
 async function restore() {
-    const baseUrl = 'https://vcrm-q4194.sevalla.app/api';
+    const baseUrl = 'https://vcrm-x1crx.sevalla.app/api';
 
     console.log('Logging in...');
     try {
