@@ -1971,157 +1971,131 @@ body {
 }
 
 /* =========================================
-   PIPELINE - KANBAN BOARD PREMIUM
-   Horizontal Scrolling World Class
+   PIPELINE - MODERN KANBAN BOARD
    ========================================= */
-/* =========================================
-   PIPELINE - KANBAN BOARD PREMIUM
-   Horizontal Scrolling World Class
-   ========================================= */
-.pipeline-view {
+
+.pipeline-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  /* Full viewport height */
-  overflow-y: auto;
-  /* Allow page scroll to see BI section */
-  background: var(--bg-main);
-}
-
-.view-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: var(--space-4);
-  margin-bottom: var(--space-4);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  padding: 0 var(--space-4);
-  /* Add padding since parent might not have it */
 }
 
-/* Kanban Board - Compact Fixed Layout */
 .kanban-wrapper {
-  margin-top: var(--space-2);
-  overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 .kanban-board {
   display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 8px 16px 16px;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  height: calc(100vh - 380px);
-  /* Fixed height based on viewport minus header/KPIs */
-  min-height: 400px;
-  max-height: 500px;
+  gap: 16px;
+  height: calc(100vh - 340px);
+  min-height: 450px;
 }
 
-.kanban-board::-webkit-scrollbar {
-  height: 8px;
-}
-
-.kanban-board::-webkit-scrollbar-track {
-  background: var(--slate-100);
-  border-radius: 4px;
-}
-
-.kanban-board::-webkit-scrollbar-thumb {
-  background: var(--primary-400);
-  border-radius: 4px;
-}
-
-/* Kanban Column - FIXED COMPACT WIDTH */
+/* Kanban Column - FLEX PROPORTIONAL */
 .kanban-column {
-  background: var(--bg-card);
-  border-radius: 12px;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  width: 200px;
-  /* FIXED width - fits 6 cols on 1400px screen */
-  min-width: 200px;
-  max-width: 200px;
-  height: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-color-soft);
-  flex-shrink: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--slate-200);
+  overflow: hidden;
 }
 
 .kanban-column:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Larger screens - slightly wider columns */
-@media (min-width: 1600px) {
-  .kanban-column {
-    width: 220px;
-    min-width: 220px;
-    max-width: 220px;
-  }
-}
-
-/* Mobile: Horizontal scroll, keep columns compact */
+/* Mobile: Vertical accordion */
 @media (max-width: 768px) {
   .kanban-board {
+    flex-direction: column;
     height: auto;
-    min-height: 300px;
-    max-height: none;
-    padding: 8px;
-    gap: 10px;
+    min-height: auto;
+    gap: 12px;
   }
 
   .kanban-column {
-    width: 160px;
-    min-width: 160px;
-    max-width: 160px;
-    height: 350px;
+    flex: none;
+    width: 100%;
+  }
+
+  .column-header {
+    cursor: pointer;
+  }
+
+  .mobile-toggle {
+    display: block;
+    font-size: 10px;
+    opacity: 0.8;
+  }
+
+  .column-content {
+    display: none;
+  }
+
+  .column-content.show {
+    display: flex;
+  }
+
+  .kanban-column.expanded {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   }
 }
 
-/* Column Header - Compact */
+/* Column Header */
 .column-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
-  border-radius: 12px 12px 0 0;
+  padding: 14px 16px;
+  border-radius: 16px 16px 0 0;
   color: white;
   flex-shrink: 0;
 }
 
 .column-header h3 {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   margin: 0;
   text-transform: uppercase;
-  opacity: 0.95;
+}
+
+.column-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .column-count {
-  width: 18px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   color: white;
 }
 
-/* Column Value - Compact */
+.mobile-toggle {
+  display: none;
+}
+
+/* Column Value */
 .column-value {
-  padding: 6px 10px;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
+  padding: 12px 16px;
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--slate-100);
+  font-size: 20px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--slate-800);
   flex-shrink: 0;
 }
 
@@ -2156,80 +2130,88 @@ body {
   background: rgba(148, 163, 184, 0.5);
 }
 
-/* Opportunity Card - Compact Fixed Height */
+/* Opportunity Card - 140px Fixed Height */
 .opp-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px;
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  padding: 14px;
   cursor: grab;
   transition: all 0.15s ease;
-  position: relative;
-  height: 110px;
-  /* COMPACT fixed height */
-  min-height: 110px;
-  max-height: 110px;
+  height: 140px;
+  min-height: 140px;
+  max-height: 140px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
 .opp-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-color: var(--primary-300);
+  transform: translateY(-1px);
+}
+
+.opp-card:active {
+  cursor: grabbing;
 }
 
 .opp-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 6px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .opp-card-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.2;
+  color: var(--slate-800);
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   flex: 1;
 }
 
 .opp-card-value {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--primary-600);
   white-space: nowrap;
+  background: var(--primary-50);
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
 .opp-card-body {
-  font-size: 10px;
-  color: var(--text-secondary);
-  line-height: 1.3;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .opp-card-company {
+  font-size: 12px;
   font-weight: 500;
+  color: var(--slate-600);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .opp-card-date {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--slate-400);
-  margin-top: 2px;
 }
 
 .opp-card-owner {
   display: none;
-  /* Hide on compact view */
 }
 
 /* Opportunity Card Actions */
