@@ -262,22 +262,23 @@ router.post('/restore-legacy', auth, async (req, res) => {
 
   try {
     const data = JSON.parse(fs.readFileSync(dumpPath, 'utf8'));
-    const client = require('../database/db').pool; // Direct access to pool for transactions
+    const db = require('../database/db');
+    const pool = db.pool; // Access pool property from db wrapper
 
-    if (!client) {
-      return res.status(500).json({ error: 'Not connected to PostgreSQL' });
+    if (!pool) {
+      return res.status(500).json({ error: 'Not connected to PostgreSQL - pool not available', dbType: db.type });
     }
 
     // Start transaction
-    const clientConn = await client.connect();
+    const client = await pool.connect();
 
     try {
-      await clientConn.query('BEGIN');
+      await client.query('BEGIN');
 
       // 1. Users (skip existing admin/users to avoid conflicts, or use ON CONFLICT)
       if (data.users) {
         for (const user of data.users) {
-          await clientConn.query(`
+          await client.query(`
             INSERT INTO users (id, username, email, password, "fullName", avatar, phone, company, role, "createdAt", "updatedAt")
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             ON CONFLICT (id) DO NOTHING
@@ -286,52 +287,52 @@ router.post('/restore-legacy', auth, async (req, res) => {
           `, [user.id, user.username, user.email, user.password, user.fullName, user.avatar, user.phone, user.company, user.role, user.createdAt, user.updatedAt]);
         }
         // Reset sequence
-        await clientConn.query("SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))");
+        await client.query("SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))");
       }
 
       // 2. Contacts
       if (data.contacts) {
         for (const contact of data.contacts) {
-          await clientConn.query(`
+          await client.query(`
             INSERT INTO contacts (id, name, company, email, phone, value, status, avatar, "lastContact", notes, "userId", "createdAt", "updatedAt")
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             ON CONFLICT (id) DO NOTHING
           `, [contact.id, contact.name, contact.company, contact.email, contact.phone, contact.value, contact.status, contact.avatar, contact.lastContact, contact.notes, contact.userId, contact.createdAt, contact.updatedAt]);
         }
-        await clientConn.query("SELECT setval('contacts_id_seq', (SELECT MAX(id) FROM contacts))");
+        await client.query("SELECT setval('contacts_id_seq', (SELECT MAX(id) FROM contacts))");
       }
 
       // 3. Opportunities
       if (data.opportunities) {
         for (const opp of data.opportunities) {
-          await clientConn.query(`
+          await client.query(`
             INSERT INTO opportunities (id, title, company, value, stage, probability, "openDate", "closeDate", owner, "contactId", "userId", "originalStage", notes, "createdAt", "updatedAt")
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             ON CONFLICT (id) DO NOTHING
           `, [opp.id, opp.title, opp.company, opp.value, opp.stage, opp.probability, opp.openDate, opp.closeDate, opp.owner, opp.contactId, opp.userId, opp.originalStage, opp.notes, opp.createdAt, opp.updatedAt]);
         }
-        await clientConn.query("SELECT setval('opportunities_id_seq', (SELECT MAX(id) FROM opportunities))");
+        await client.query("SELECT setval('opportunities_id_seq', (SELECT MAX(id) FROM opportunities))");
       }
 
       // 4. Tasks
       if (data.tasks) {
         for (const task of data.tasks) {
-          await clientConn.query(`
+          await client.query(`
             INSERT INTO tasks (id, title, type, priority, "dueDate", status, "contactId", "opportunityId", "userId", description, "completedAt", "createdAt", "updatedAt")
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             ON CONFLICT (id) DO NOTHING
           `, [task.id, task.title, task.type, task.priority, task.dueDate, task.status, task.contactId, task.opportunityId, task.userId, task.description, task.completedAt, task.createdAt, task.updatedAt]);
         }
-        await clientConn.query("SELECT setval('tasks_id_seq', (SELECT MAX(id) FROM tasks))");
+        await client.query("SELECT setval('tasks_id_seq', (SELECT MAX(id) FROM tasks))");
       }
 
-      await clientConn.query('COMMIT');
+      await client.query('COMMIT');
       res.json({ message: 'Data restored successfully' });
     } catch (e) {
-      await clientConn.query('ROLLBACK');
+      await client.query('ROLLBACK');
       throw e;
     } finally {
-      clientConn.release();
+      client.release();
     }
 
   } catch (err) {
