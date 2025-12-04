@@ -1,86 +1,24 @@
 import React, { useMemo, useState } from 'react';
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    Line, ComposedChart, BarChart, Bar, ReferenceLine
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    Line, ReferenceLine, ComposedChart, Area
 } from 'recharts';
-import { Euro, Target, TrendingUp, CheckSquare, ArrowUpRight, ArrowDownRight, Users, Clock, Zap, ChevronRight, Plus, Phone, Award, Calendar } from 'lucide-react';
-import pipelineStages from '../constants/pipelineStages';
-import COLORS from '../constants/colors';
 import { MONTHLY_TARGETS, ANNUAL_TARGET } from '../constants/targets';
 
-const KPICard = ({ title, value, change, changeType, icon, color, onClick }) => (
-    <div className="kpi-card" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-        <div className="kpi-header">
-            <span className="kpi-title">{title}</span>
-            <div className={`kpi-icon ${color}`}>{icon}</div>
-        </div>
-        <div className="kpi-value">{value}</div>
-        <div className={`kpi-change ${changeType}`}>
-            {changeType === 'positive' ? <ArrowUpRight size={16} /> : changeType === 'negative' ? <ArrowDownRight size={16} /> : null}
-            <span>{change}</span>
-        </div>
-    </div>
-);
-
-const QuickAction = ({ icon, label, color, onClick }) => (
-    <button className="quick-action-btn" onClick={onClick}>
-        <div className={`quick-action-icon ${color}`}>{icon}</div>
-        <span>{label}</span>
-    </button>
-);
-
 export default function Dashboard({ opportunities, tasks, contacts, invoices = [], setActiveView }) {
-    const [timeRange, setTimeRange] = useState('year');
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const currentMonth = new Date().getMonth();
 
-    // Calcoli KPI - Centro di Controllo
-    const kpiData = useMemo(() => {
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = selectedYear;
+    // === DATI PER GRAFICI BI ===
+    const biData = useMemo(() => {
+        const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
-        // === ORDINATO (Venduto) ===
-        // Fatturato Annuale YTD (Opportunità Vinte)
-        const annualRevenue = opportunities
-            .filter(o => {
-                if (!o.closeDate) return false;
-                const d = new Date(o.closeDate);
-                return d.getFullYear() === currentYear &&
-                    (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
-            })
-            .reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
-
-        // Target YTD (somma dei target fino al mese corrente)
-        const targetYTD = MONTHLY_TARGETS
-            .filter(t => t.month <= currentMonth)
-            .reduce((sum, t) => sum + t.target, 0);
-
-        // Gap vs Target YTD
-        const targetYTDGap = annualRevenue - targetYTD;
-        const annualProgress = (annualRevenue / ANNUAL_TARGET) * 100;
-
-        // === FATTURATO (Reale) ===
-        const invoicedRevenue = invoices
-            .filter(i => {
-                const dateStr = i.issueDate || i.date;
-                if (!dateStr) return false;
-                const d = new Date(dateStr);
-                return d.getFullYear() === currentYear && i.status !== 'Bozza' && i.status !== 'Annullata';
-            })
-            .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
-
-        // BACKLOG: Ordinato ma non ancora fatturato
-        const backlog = annualRevenue - invoicedRevenue;
-
-        // === OFFERTE FUORI (Pipeline Attiva) ===
-        // Solo stage 'attivi' (esclusi Chiuso Vinto/Perso)
+        // Pipeline attiva (non chiusa)
         const activeOffers = opportunities.filter(o =>
             !o.stage?.toLowerCase().includes('chiuso')
         );
 
-        const totalPipeline = activeOffers.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
-
-        // Pipeline Ponderata (stima probabilità per stage)
+        // Probabilità per stage
         const stageProbability = {
             'Lead': 0.1,
             'In contatto': 0.2,
@@ -88,377 +26,244 @@ export default function Dashboard({ opportunities, tasks, contacts, invoices = [
             'Revisionare offerta': 0.6
         };
 
+        // Pipeline ponderata totale
         const weightedPipeline = activeOffers.reduce((sum, o) => {
             const prob = stageProbability[o.stage] || 0.3;
             return sum + ((parseFloat(o.value) || 0) * prob);
         }, 0);
 
-        // Offerte Stale (create più di 60 giorni fa e ancora aperte)
-        const staleOffers = activeOffers.filter(o => {
-            if (!o.createdAt) return false;
-            const created = new Date(o.createdAt);
-            const daysSinceCreation = (now - created) / (1000 * 60 * 60 * 24);
-            return daysSinceCreation > 60;
-        });
+        // Mesi rimanenti nell'anno
+        const remainingMonths = 12 - currentMonth - 1;
+        const pipelinePerMonth = remainingMonths > 0 ? weightedPipeline / remainingMonths : 0;
 
-        // Attività urgenti
-        const today = now.toISOString().split('T')[0];
-        const dueTodayCount = tasks.filter(t =>
-            t.dueDate === today && t.status !== 'Completata'
-        ).length;
+        // Genera dati per ogni mese
+        const monthlyData = months.map((monthName, index) => {
+            const target = MONTHLY_TARGETS[index]?.target || 0;
 
-        // Target Mese Corrente (per AI message)
-        const currentMonthTarget = MONTHLY_TARGETS[currentMonth]?.target || 0;
-        const currentMonthRevenue = opportunities
-            .filter(o => {
-                if (!o.closeDate) return false;
-                const d = new Date(o.closeDate);
-                return d.getMonth() === currentMonth &&
-                    d.getFullYear() === currentYear &&
-                    (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
-            })
-            .reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
-        const targetGap = currentMonthTarget - currentMonthRevenue;
-        const targetProgress = currentMonthTarget > 0 ? (currentMonthRevenue / currentMonthTarget) * 100 : 0;
-
-        return {
-            // Ordinato
-            annualRevenue,
-            targetYTD,
-            targetYTDGap,
-            annualProgress,
-            // Fatturato
-            invoicedRevenue,
-            backlog,
-            // Pipeline
-            totalPipeline,
-            weightedPipeline,
-            staleOffersCount: staleOffers.length,
-            // UI
-            currentMonthRevenue,
-            currentMonthTarget,
-            targetGap,
-            targetProgress,
-            dueTodayCount,
-            openTasks: tasks.filter(t => t.status !== 'Completata').length
-        };
-    }, [opportunities, tasks, invoices, selectedYear]);
-
-    // Dati Grafico Target vs Actual
-    const chartData = useMemo(() => {
-        const currentYear = selectedYear; // Use selected year
-
-        return MONTHLY_TARGETS.map(t => {
-            const actual = opportunities
+            // Ordinato (venduto) del mese
+            const ordinato = opportunities
                 .filter(o => {
                     if (!o.closeDate) return false;
                     const d = new Date(o.closeDate);
-                    return d.getMonth() === t.month &&
-                        d.getFullYear() === currentYear &&
+                    return d.getMonth() === index &&
+                        d.getFullYear() === selectedYear &&
                         (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
                 })
                 .reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
 
-            const invoiced = invoices
+            // Fatturato del mese
+            const fatturato = invoices
                 .filter(i => {
                     const dateStr = i.issueDate || i.date;
                     if (!dateStr) return false;
                     const d = new Date(dateStr);
-                    return d.getMonth() === t.month &&
-                        d.getFullYear() === currentYear &&
+                    return d.getMonth() === index &&
+                        d.getFullYear() === selectedYear &&
                         i.status !== 'Bozza' && i.status !== 'Annullata';
                 })
                 .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
 
-            return {
-                month: t.label,
-                target: t.target,
-                actual: actual, // Venduto
-                invoiced: invoiced, // Fatturato
-                gap: actual - t.target
-            };
-        });
-    }, [opportunities, invoices, selectedYear]); // Add invoices and selectedYear to dependencies
+            // Backlog = Ordinato - Fatturato (solo se positivo)
+            const backlog = Math.max(0, ordinato - fatturato);
 
-    const monthlyInvoicedData = useMemo(() => {
-        const currentYear = selectedYear;
-        return MONTHLY_TARGETS.map(t => {
-            const invoiced = invoices
-                .filter(i => {
-                    const dateStr = i.issueDate || i.date;
-                    if (!dateStr) return false;
-                    const d = new Date(dateStr);
-                    return d.getMonth() === t.month &&
-                        d.getFullYear() === currentYear &&
-                        i.status !== 'Bozza' && i.status !== 'Annullata';
-                })
-                .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
-
-            return {
-                month: t.label,
-                invoiced: invoiced
-            };
-        });
-    }, [invoices, selectedYear]);
-
-    // Dati Trend Valore Medio Deal
-    const avgDealValueData = useMemo(() => {
-        const currentYear = selectedYear; // Use selected year
-        const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-
-        return months.map((monthName, index) => {
-            const monthDeals = opportunities.filter(o => {
-                if (!o.closeDate) return false;
-                const d = new Date(o.closeDate);
-                return d.getMonth() === index &&
-                    d.getFullYear() === currentYear &&
-                    (o.stage === 'Chiuso Vinto' || o.originalStage === 'Chiuso Vinto');
-            });
-
-            const totalValue = monthDeals.reduce((sum, o) => sum + (parseFloat(o.value) || 0), 0);
-            const avgValue = monthDeals.length > 0 ? totalValue / monthDeals.length : 0;
+            // Forecast (per mesi futuri)
+            const isFuture = index > currentMonth;
+            const forecast = isFuture ? pipelinePerMonth : null;
 
             return {
                 month: monthName,
-                value: avgValue,
-                count: monthDeals.length
+                monthIndex: index,
+                target,
+                ordinato,
+                fatturato,
+                backlog,
+                forecast,
+                isFuture,
+                isPast: index < currentMonth,
+                isCurrent: index === currentMonth
             };
         });
-    }, [opportunities, selectedYear]); // Add selectedYear to dependencies
+
+        // Calcoli cumulativi per forecast
+        let cumulativeOrdinato = 0;
+        let cumulativeFatturato = 0;
+        let cumulativeForecast = 0;
+
+        const cumulativeData = monthlyData.map((m, index) => {
+            if (m.isFuture) {
+                cumulativeForecast += m.forecast || 0;
+            } else {
+                cumulativeOrdinato += m.ordinato;
+                cumulativeFatturato += m.fatturato;
+            }
+
+            // Target cumulativo
+            const cumulativeTarget = MONTHLY_TARGETS
+                .slice(0, index + 1)
+                .reduce((sum, t) => sum + t.target, 0);
+
+            return {
+                ...m,
+                cumulativeOrdinato,
+                cumulativeFatturato,
+                cumulativeTarget,
+                cumulativeForecast: m.isFuture ? cumulativeOrdinato + cumulativeForecast : null
+            };
+        });
+
+        // KPI Summary
+        const ytdOrdinato = cumulativeData[currentMonth]?.cumulativeOrdinato || 0;
+        const ytdFatturato = cumulativeData[currentMonth]?.cumulativeFatturato || 0;
+        const ytdTarget = cumulativeData[currentMonth]?.cumulativeTarget || 0;
+        const ytdBacklog = ytdOrdinato - ytdFatturato;
+        const projectedTotal = ytdOrdinato + weightedPipeline;
+
+        return {
+            monthlyData,
+            cumulativeData,
+            ytdOrdinato,
+            ytdFatturato,
+            ytdTarget,
+            ytdBacklog,
+            weightedPipeline,
+            projectedTotal
+        };
+    }, [opportunities, invoices, selectedYear, currentMonth]);
 
     const formatCurrency = (value) => {
-        if (value >= 1000000) return `€${(value / 1000000).toFixed(1)} M`;
-        if (value >= 1000) return `€${(value / 1000).toFixed(0)} K`;
-        return `€${value.toLocaleString('it-IT')} `;
+        if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `€${Math.round(value / 1000)}K`;
+        return `€${Math.round(value)}`;
     };
 
-    // Generazione Messaggio AI
-    const getAIMessage = () => {
-        const { targetGap, dueTodayCount, currentMonthRevenue, currentMonthTarget } = kpiData;
+    const formatTooltip = (value) => `€${value.toLocaleString('it-IT')}`;
 
-        if (dueTodayCount > 0) {
-            return `Hai ${dueTodayCount} attività in scadenza oggi.Inizia da quelle per mantenere il ritmo!`;
-        }
-
-        if (targetGap > 0) {
-            return `Sei a ${formatCurrency(currentMonthRevenue)} questo mese.Ti mancano ${formatCurrency(targetGap)} per raggiungere l'obiettivo di ${formatCurrency(currentMonthTarget)}.`;
-        }
-
-        if (targetGap <= 0 && currentMonthTarget > 0) {
-            return `Fantastico! Hai già superato l'obiettivo mensile di ${formatCurrency(Math.abs(targetGap))}. Punta al record annuale! 🚀`;
-        }
-
-        return "Tutto tranquillo oggi. È un buon momento per fare follow-up sui clienti inattivi.";
+    // Colori
+    const colors = {
+        target: '#94a3b8',
+        ordinato: '#3b82f6',
+        fatturato: '#10b981',
+        backlog: '#f59e0b',
+        forecast: '#8b5cf6',
+        danger: '#ef4444'
     };
 
     return (
-        <div className="dashboard">
-            {/* AI Daily Briefing Section */}
-            <div className="ai-briefing-section">
-                <div className="ai-briefing-header">
-                    <div className="ai-avatar">
-                        <Zap size={24} color="white" fill="white" />
-                    </div>
-                    <div className="ai-content">
-                        <h2>Buongiorno, Valentino!</h2>
-                        <p className="ai-message">{getAIMessage()}</p>
-                    </div>
+        <div className="dashboard bi-dashboard">
+            {/* Header con KPI Summary */}
+            <div className="bi-header">
+                <div className="bi-header-left">
+                    <h1>📊 Business Intelligence</h1>
+                    <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                        className="year-selector"
+                    >
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
                 </div>
-                <div className="ai-stats-row">
-                    <div className="ai-stat">
-                        <span className="label">Obiettivo Mese</span>
-                        <span className="value">{Math.round(kpiData.targetProgress)}%</span>
-                        <div className="progress-bar-sm">
-                            <div className="progress-fill" style={{ width: `${Math.min(kpiData.targetProgress, 100)}%`, background: kpiData.targetProgress >= 100 ? '#10b981' : '#3b82f6' }}></div>
-                        </div>
+                <div className="bi-kpi-row">
+                    <div className="bi-kpi">
+                        <span className="bi-kpi-label">Ordinato YTD</span>
+                        <span className="bi-kpi-value">{formatCurrency(biData.ytdOrdinato)}</span>
+                        <span className={`bi-kpi-delta ${biData.ytdOrdinato >= biData.ytdTarget ? 'positive' : 'negative'}`}>
+                            {biData.ytdOrdinato >= biData.ytdTarget ? '↑' : '↓'} {formatCurrency(Math.abs(biData.ytdOrdinato - biData.ytdTarget))} vs target
+                        </span>
                     </div>
-                    <div className="ai-stat">
-                        <span className="label">Obiettivo Anno (€85k)</span>
-                        <span className="value">{Math.round(kpiData.annualProgress)}%</span>
-                        <div className="progress-bar-sm">
-                            <div className="progress-fill" style={{ width: `${Math.min(kpiData.annualProgress, 100)}%`, background: '#8b5cf6' }}></div>
-                        </div>
+                    <div className="bi-kpi">
+                        <span className="bi-kpi-label">Fatturato YTD</span>
+                        <span className="bi-kpi-value">{formatCurrency(biData.ytdFatturato)}</span>
+                        <span className="bi-kpi-delta neutral">
+                            {formatCurrency(biData.ytdBacklog)} da fatturare
+                        </span>
+                    </div>
+                    <div className="bi-kpi">
+                        <span className="bi-kpi-label">Proiezione Anno</span>
+                        <span className="bi-kpi-value">{formatCurrency(biData.projectedTotal)}</span>
+                        <span className={`bi-kpi-delta ${biData.projectedTotal >= ANNUAL_TARGET ? 'positive' : 'negative'}`}>
+                            {biData.projectedTotal >= ANNUAL_TARGET ? '✓' : '⚠'} Target {formatCurrency(ANNUAL_TARGET)}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <div className="dashboard-grid">
-                {/* Left Column: Main Charts */}
-                <div className="main-chart-column">
-                    {/* Target vs Actual Chart */}
-                    <div className="chart-card large">
-                        <div className="chart-header">
-                            <div>
-                                <h3>🎯 Performance {selectedYear}</h3>
-                                <p className="subtitle">Fatturato Reale vs Obiettivi Mensili</p>
-                            </div>
-                            <select
-                                value={selectedYear}
-                                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                                style={{
-                                    padding: '8px 12px',
-                                    border: '1px solid var(--gray-200)',
-                                    borderRadius: '8px',
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    background: 'white',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                <option value="2024">2024</option>
-                                <option value="2025">2025</option>
-                                <option value="2026">2026</option>
-                            </select>
-                            <div className="chart-legend">
-                                <span className="legend-item"><span className="dot target"></span>Target</span>
-                                <span className="legend-item"><span className="dot actual"></span>Venduto</span>
-                                <span className="legend-item"><span className="dot" style={{ background: '#10b981' }}></span>Fatturato</span>
-                            </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={350}>
-                            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `€${v / 1000}k`} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                    formatter={(value, name) => [
-                                        formatCurrency(value),
-                                        name === 'actual' ? 'Venduto (Ordini)' :
-                                            name === 'invoiced' ? 'Fatturato (Reale)' :
-                                                'Obiettivo'
-                                    ]}
-                                />
-                                <Area type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorActual)" />
-                                <Line type="monotone" dataKey="invoiced" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} />
-                                <Line type="step" dataKey="target" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                            </AreaChart>
-                        </ResponsiveContainer>
+            {/* GRAFICO 1: Ordinato vs Target */}
+            <div className="bi-chart-card">
+                <div className="bi-chart-header">
+                    <div>
+                        <h3>📈 Ordinato vs Target Mensile</h3>
+                        <p>Confronto venduto vs obiettivo per ogni mese</p>
                     </div>
-
-                    {/* Grafico Fatturato Mensile (Barre) */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <div className="chart-title-group">
-                                <div className="chart-icon green">
-                                    <Euro size={20} />
-                                </div>
-                                <div>
-                                    <h3>Andamento Fatturato {selectedYear}</h3>
-                                    <p>Totale fatturato mese per mese</p>
-                                </div>
-                            </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={monthlyInvoicedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorInvoicedBar" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.3} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `€${v / 1000}k`} />
-                                <Tooltip
-                                    cursor={{ fill: '#f1f5f9' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                    formatter={(value) => [formatCurrency(value), 'Fatturato']}
-                                />
-                                <Bar dataKey="invoiced" fill="url(#colorInvoicedBar)" radius={[4, 4, 0, 0]} barSize={40} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* Trend Valore Medio Deal */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <div>
-                                <h3>📈 Trend Valore Medio Deal</h3>
-                                <p className="subtitle">Evoluzione del valore medio dei contratti chiusi</p>
-                            </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={avgDealValueData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `€${v / 1000}k`} />
-                                <Tooltip
-                                    cursor={{ fill: '#f1f5f9' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                    formatter={(value) => [formatCurrency(value), 'Valore Medio']}
-                                />
-                                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <div className="bi-legend">
+                        <span><span className="dot" style={{ background: colors.target }}></span> Target</span>
+                        <span><span className="dot" style={{ background: colors.ordinato }}></span> Ordinato</span>
                     </div>
                 </div>
+                <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={biData.monthlyData} barGap={2}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={formatCurrency} />
+                        <Tooltip formatter={formatTooltip} />
+                        <Bar dataKey="target" fill={colors.target} radius={[4, 4, 0, 0]} name="Target" />
+                        <Bar dataKey="ordinato" fill={colors.ordinato} radius={[4, 4, 0, 0]} name="Ordinato" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
 
-                {/* Right Column: Sidebar (Quick Actions + Stats) */}
-                <div className="sidebar-column">
-                    {/* Quick Actions */}
-                    <div className="quick-actions">
-                        <QuickAction icon={<Phone size={18} />} label="Chiamata" color="blue" onClick={() => setActiveView('tasks')} />
-                        <QuickAction icon={<Plus size={18} />} label="Opportunità" color="green" onClick={() => setActiveView('opportunities')} />
-                        <QuickAction icon={<Users size={18} />} label="Contatto" color="purple" onClick={() => setActiveView('contacts')} />
+            {/* GRAFICO 2: Fatturato vs Backlog */}
+            <div className="bi-chart-card">
+                <div className="bi-chart-header">
+                    <div>
+                        <h3>💰 Fatturato vs Da Fatturare</h3>
+                        <p>Quanto hai incassato e quanto ti resta in pancia</p>
                     </div>
-
-                    {/* KPI Cards - CENTRO DI CONTROLLO */}
-                    {/* 1. ORDINATO vs Target YTD */}
-                    <div className="stat-box">
-                        <div className={`stat-icon-bg ${kpiData.targetYTDGap >= 0 ? 'green' : 'orange'}`}>
-                            <Target size={20} />
-                        </div>
-                        <div className="stat-info">
-                            <span className="stat-label">Ordinato YTD</span>
-                            <span className="stat-value">{formatCurrency(kpiData.annualRevenue)}</span>
-                            <span className={`stat-sub ${kpiData.targetYTDGap >= 0 ? 'positive' : 'negative'}`}>
-                                {kpiData.targetYTDGap >= 0 ? '+' : ''}{formatCurrency(kpiData.targetYTDGap)} vs target
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* 2. FATTURATO + Backlog */}
-                    <div className="stat-box">
-                        <div className="stat-icon-bg green"><Euro size={20} /></div>
-                        <div className="stat-info">
-                            <span className="stat-label">Fatturato YTD</span>
-                            <span className="stat-value">{formatCurrency(kpiData.invoicedRevenue)}</span>
-                            <span className="stat-sub">
-                                {kpiData.backlog > 0 ? `${formatCurrency(kpiData.backlog)} da fatturare` : 'Tutto incassato! 🎉'}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* 3. PIPELINE PONDERATA */}
-                    <div className="stat-box">
-                        <div className="stat-icon-bg purple"><TrendingUp size={20} /></div>
-                        <div className="stat-info">
-                            <span className="stat-label">Pipeline Ponderata</span>
-                            <span className="stat-value">{formatCurrency(kpiData.weightedPipeline)}</span>
-                            <span className="stat-sub">
-                                {formatCurrency(kpiData.totalPipeline)} totale ({kpiData.staleOffersCount > 0 ? `${kpiData.staleOffersCount} stale` : 'tutte attive'})
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* 4. ATTIVITÀ */}
-                    <div className="stat-box">
-                        <div className="stat-icon-bg orange"><CheckSquare size={20} /></div>
-                        <div className="stat-info">
-                            <span className="stat-label">Da Fare</span>
-                            <span className="stat-value">{kpiData.openTasks}</span>
-                            <span className="stat-sub">{kpiData.dueTodayCount} in scadenza oggi</span>
-                        </div>
+                    <div className="bi-legend">
+                        <span><span className="dot" style={{ background: colors.fatturato }}></span> Fatturato</span>
+                        <span><span className="dot" style={{ background: colors.backlog }}></span> Da Fatturare</span>
                     </div>
                 </div>
+                <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={biData.monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={formatCurrency} />
+                        <Tooltip formatter={formatTooltip} />
+                        <Bar dataKey="fatturato" stackId="stack" fill={colors.fatturato} name="Fatturato" />
+                        <Bar dataKey="backlog" stackId="stack" fill={colors.backlog} radius={[4, 4, 0, 0]} name="Da Fatturare" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* GRAFICO 3: Forecast Cumulativo */}
+            <div className="bi-chart-card">
+                <div className="bi-chart-header">
+                    <div>
+                        <h3>🔮 Forecast Annuale</h3>
+                        <p>Andamento cumulativo + proiezione da pipeline</p>
+                    </div>
+                    <div className="bi-legend">
+                        <span><span className="dot" style={{ background: colors.ordinato }}></span> Ordinato</span>
+                        <span><span className="dot" style={{ background: colors.fatturato }}></span> Fatturato</span>
+                        <span><span className="dot" style={{ background: colors.forecast }}></span> Proiezione</span>
+                    </div>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={biData.cumulativeData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={formatCurrency} />
+                        <Tooltip formatter={formatTooltip} />
+                        <ReferenceLine y={ANNUAL_TARGET} stroke={colors.danger} strokeDasharray="5 5" label={{ value: `Target €85K`, position: 'right', fill: colors.danger, fontSize: 12 }} />
+                        <Area type="monotone" dataKey="cumulativeOrdinato" fill={colors.ordinato} fillOpacity={0.2} stroke={colors.ordinato} strokeWidth={2} name="Ordinato Cumulativo" />
+                        <Line type="monotone" dataKey="cumulativeFatturato" stroke={colors.fatturato} strokeWidth={3} dot={{ r: 4 }} name="Fatturato Cumulativo" />
+                        <Line type="monotone" dataKey="cumulativeForecast" stroke={colors.forecast} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="Proiezione Pipeline" />
+                    </ComposedChart>
+                </ResponsiveContainer>
             </div>
         </div>
     );
 }
+
