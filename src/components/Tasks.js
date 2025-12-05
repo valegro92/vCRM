@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Calendar, Edit2, Trash2, CheckCircle, Circle, Clock, AlertCircle, ListTodo, Flag, Users } from 'lucide-react';
+import { Plus, Calendar, Edit2, Trash2, CheckCircle, Circle, Clock, AlertCircle, ListTodo, Flag, Users, Calendar as CalendarIcon } from 'lucide-react';
 import { PageHeader, SearchFilter, KPICard, KPISection } from './ui';
+import { downloadICS } from '../utils/icsGenerator';
 
 export default function Tasks({ tasks, contacts, openAddModal, handleDeleteTask, handleToggleTask }) {
     const [statusFilter, setStatusFilter] = useState('all');
@@ -279,6 +280,13 @@ export default function Tasks({ tasks, contacts, openAddModal, handleDeleteTask,
 
                                 {/* Actions */}
                                 <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                    <button
+                                        className="action-btn"
+                                        onClick={() => downloadICS(task)}
+                                        title="Aggiungi al calendario"
+                                    >
+                                        <CalendarIcon size={16} />
+                                    </button>
                                     <button
                                         className="action-btn"
                                         onClick={() => openAddModal('task', task)}

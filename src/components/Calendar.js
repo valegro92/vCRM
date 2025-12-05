@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Check, Clock, Phone, Mail, Video, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Check, Clock, Phone, Mail, Video, FileText, Calendar as CalendarIcon } from 'lucide-react';
+import { downloadICS } from '../utils/icsGenerator';
 
 export default function Calendar({ tasks, openAddModal, handleToggleTask }) {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -14,7 +15,7 @@ export default function Calendar({ tasks, openAddModal, handleToggleTask }) {
         const startingDay = firstDay.getDay();
 
         const days = [];
-        
+
         // Previous month days
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = startingDay - 1; i >= 0; i--) {
@@ -314,6 +315,7 @@ export default function Calendar({ tasks, openAddModal, handleToggleTask }) {
             background: #f8fafc;
             border-radius: 10px;
             transition: all 0.2s;
+            position: relative;
         }
 
         .task-item:hover {
@@ -388,6 +390,24 @@ export default function Calendar({ tasks, openAddModal, handleToggleTask }) {
         .task-priority.alta { background: #fee2e2; color: #dc2626; }
         .task-priority.media { background: #fef3c7; color: #d97706; }
         .task-priority.bassa { background: #dcfce7; color: #16a34a; }
+
+        .calendar-action-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calendar-action-btn:hover {
+            background: #e2e8f0;
+            color: #3b82f6;
+        }
 
         .no-tasks {
             text-align: center;
@@ -533,6 +553,13 @@ export default function Calendar({ tasks, openAddModal, handleToggleTask }) {
                                             </span>
                                         </div>
                                     </div>
+                                    <button
+                                        className="calendar-action-btn"
+                                        onClick={() => downloadICS(task)}
+                                        title="Aggiungi al calendario"
+                                    >
+                                        <CalendarIcon size={16} />
+                                    </button>
                                 </div>
                             ))
                         )}
@@ -567,6 +594,13 @@ export default function Calendar({ tasks, openAddModal, handleToggleTask }) {
                                             </span>
                                         </div>
                                     </div>
+                                    <button
+                                        className="calendar-action-btn"
+                                        onClick={() => downloadICS(task)}
+                                        title="Aggiungi al calendario"
+                                    >
+                                        <CalendarIcon size={16} />
+                                    </button>
                                 </div>
                             ))
                         }
